@@ -1467,6 +1467,7 @@
         }
         
         function updateJSON() {
+            tilemapData.editorManaged = true;
             document.getElementById('jsonEditor').value = JSON.stringify(tilemapData, null, 2);
             localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
             clearTimeout(liveSyncTimer);

@@ -28,6 +28,7 @@ const STANDARD_HITBOX_H = 48;
 const WORLD_WIDTH = 2048;
 const WORLD_HEIGHT = 2048;
 const TILE_SIZE = 32;
+const DEFAULT_TOWN_SPAWN = { x: 32, y: 34 };
 const TILE_MARGIN = 1;
 const TILE_SPACING = 2;
 const MAP_TILES_W = WORLD_WIDTH / TILE_SIZE;
@@ -568,7 +569,10 @@ class MainScene extends Phaser.Scene {
     const savedTilemap = localStorage.getItem('tilemapData');
     if (savedTilemap) {
       try {
-        this.applyTilemapData(JSON.parse(savedTilemap));
+        const savedData = JSON.parse(savedTilemap);
+        if (savedData?.editorManaged) {
+          this.applyTilemapData(savedData);
+        }
       } catch (error) {
         console.warn('Stored tilemap could not be loaded:', error);
       }
@@ -726,13 +730,23 @@ class MainScene extends Phaser.Scene {
     };
   }
 
+  getDefaultTownSpawnPosition() {
+    return {
+      x: (DEFAULT_TOWN_SPAWN.x + 0.5) * TILE_SIZE,
+      y: (DEFAULT_TOWN_SPAWN.y + 0.5) * TILE_SIZE
+    };
+  }
+
   getSavedPlayerSpawnPosition() {
     try {
       const savedTilemap = JSON.parse(localStorage.getItem('tilemapData') || 'null');
-      return this.getSpawnWorldPosition(savedTilemap) || { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+      if (savedTilemap?.editorManaged) {
+        return this.getSpawnWorldPosition(savedTilemap) || this.getDefaultTownSpawnPosition();
+      }
+      return this.getDefaultTownSpawnPosition();
     } catch (error) {
       console.warn('Saved player spawn could not be loaded:', error);
-      return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+      return this.getDefaultTownSpawnPosition();
     }
   }
 
@@ -805,7 +819,14 @@ class MainScene extends Phaser.Scene {
       ? JSON.parse(JSON.stringify(this.activeTilemapData))
       : tilemapData;
 
-    if (this.activeTilemapData || !localStorage.getItem('tilemapData')) {
+    let savedEditorData = null;
+    try {
+      savedEditorData = JSON.parse(localStorage.getItem('tilemapData') || 'null');
+    } catch (error) {
+      savedEditorData = null;
+    }
+    if (this.activeTilemapData || !savedEditorData?.editorManaged) {
+      editorData.editorManaged = true;
       localStorage.setItem('tilemapData', JSON.stringify(editorData));
     }
     window.open('tilemap-editor.html', 'TilemapEditor', 'width=1200,height=800');
