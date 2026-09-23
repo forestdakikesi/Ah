@@ -154,11 +154,13 @@
             flex: 1;
             display: flex;
             gap: 15px;
-            overflow: hidden;
+            min-height: 0;
+            overflow: visible;
         }
         
         .map-preview {
-            flex: 1;
+            flex: 1 1 48%;
+            min-width: 0;
             background: linear-gradient(180deg, #0f1d2f, #0b1220);
             border-radius: 14px;
             overflow: auto;
@@ -168,6 +170,43 @@
             justify-content: center;
             border: 1px solid rgba(105, 139, 255, 0.25);
             box-shadow: inset 0 0 18px rgba(36, 63, 104, 0.5);
+        }
+
+        .game-preview {
+            flex: 1 1 52%;
+            min-width: 280px;
+            min-height: 320px;
+            overflow: hidden;
+            position: relative;
+            background: #07130d;
+            border: 1px solid rgba(105, 139, 255, 0.25);
+            border-radius: 14px;
+            box-shadow: inset 0 0 18px rgba(36, 63, 104, 0.5);
+        }
+
+        .game-preview::before {
+            content: 'GERÇEK OYUN ÖNİZLEMESİ';
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            left: 12px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(5, 12, 8, 0.78);
+            border: 1px solid rgba(133, 255, 174, 0.35);
+            color: #b5ffd0;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            pointer-events: none;
+        }
+
+        #gamePreview {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 320px;
+            border: 0;
+            background: #07130d;
         }
         
         .right-panel {
@@ -478,12 +517,31 @@
         }
         
         @media (max-width: 768px) {
+            html {
+                height: auto;
+                min-height: 100%;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
             body {
                 min-height: 100dvh;
+                height: auto;
+                overflow-y: auto;
+                overflow-x: hidden;
+                touch-action: pan-y;
+            }
+
+            .editor-shell {
+                min-height: 100dvh;
+                height: auto;
+                overflow: visible;
             }
 
             .main-content {
                 padding: 10px;
+                min-width: 0;
+                overflow: visible;
             }
 
             .toolbar {
@@ -495,6 +553,20 @@
             .editor-container {
                 flex-direction: column;
                 min-height: 0;
+                overflow: visible;
+                flex: none;
+            }
+
+            .map-preview,
+            .game-preview {
+                width: 100%;
+                min-width: 0;
+                min-height: 58dvh;
+                flex: none;
+            }
+
+            #gamePreview {
+                min-height: 58dvh;
             }
             
             .right-panel {
@@ -508,7 +580,7 @@
             }
 
             .map-preview {
-                min-height: 240px;
+                min-height: 58dvh;
             }
         }
 
@@ -644,6 +716,10 @@
                     <canvas id="mapCanvas"></canvas>
                 </div>
 
+                <div class="game-preview" id="gamePreviewPanel">
+                    <iframe id="gamePreview" src="./?editorPreview=1" title="Gerçek oyun önizlemesi"></iframe>
+                </div>
+
                 <div class="right-panel">
                     <div class="minimap">
                         <h3>🗺️ Minimap</h3>
@@ -732,6 +808,7 @@
             renderMap();
             updateJSON();
             setupEventListeners();
+            setupGamePreview();
         }
 
         function normalizeEditorTilemapData(rawData) {
@@ -793,7 +870,7 @@
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
             canvas.style.imageRendering = 'pixelated';
-            canvas.style.touchAction = 'none';
+            canvas.style.touchAction = 'pan-x pan-y';
             document.getElementById('zoomLevel').textContent = `${Math.round(zoomLevel * 100)}%`;
             updateMapMeta();
         }
@@ -814,8 +891,12 @@
             localStorage.setItem('tilemapData', snapshot);
 
             try {
+                const previewFrame = document.getElementById('gamePreview');
+                if (previewFrame?.contentWindow) {
+                    previewFrame.contentWindow.postMessage({ type: 'tilemapUpdate', tilemapData }, window.location.origin);
+                }
                 if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage({ type: 'tilemapUpdate', tilemapData }, '*');
+                    window.opener.postMessage({ type: 'tilemapUpdate', tilemapData }, window.location.origin);
                     if (!silent) {
                         updateStatus('Canlı önizleme güncellendi');
                     }
@@ -832,6 +913,23 @@
             liveSyncTimer = setTimeout(() => {
                 broadcastMapUpdate({ silent: true });
             }, 120);
+        }
+
+        function setupGamePreview() {
+            const previewFrame = document.getElementById('gamePreview');
+            if (!previewFrame) return;
+
+            previewFrame.addEventListener('load', () => {
+                broadcastMapUpdate({ silent: true });
+            });
+
+            window.addEventListener('message', (event) => {
+                if (event.origin !== window.location.origin || event.source !== previewFrame.contentWindow) return;
+                if (event.data?.type === 'preview-ready') {
+                    broadcastMapUpdate({ silent: true });
+                    updateStatus('Gerçek oyun önizlemesi bağlandı');
+                }
+            });
         }
 
         function zoomIn() {
@@ -1366,7 +1464,6 @@
         
         function setupEventListeners() {
             canvas.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
                 isDrawing = true;
                 canvas.setPointerCapture?.(e.pointerId);
                 const pos = getTileAtPosition(e.clientX, e.clientY);
@@ -1384,7 +1481,6 @@
                 const pos = getTileAtPosition(e.clientX, e.clientY);
                 if (pos) updateCoordinates(pos);
                 if (!isDrawing) return;
-                e.preventDefault();
                 if (pos && (pos.x !== lastDrawPosition?.x || pos.y !== lastDrawPosition?.y)) {
                     if (currentTool !== 'fill') {
                         paintTile(pos.x, pos.y);
@@ -1440,11 +1536,6 @@
                 else if (key === 's') setTool('select');
             });
 
-            document.querySelector('.map-preview').addEventListener('touchmove', (e) => {
-                if (e.target === canvas) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
         }
 
         function updateCoordinates(pos) {
@@ -1490,7 +1581,7 @@
                 window.opener.postMessage({
                     type: 'tilemapUpdate',
                     tilemapData: tilemapData
-                }, '*');
+                }, window.location.origin);
                 window.opener.focus();
                 updateStatus('Tilemap verileri oyuna gönderildi!');
                 return;

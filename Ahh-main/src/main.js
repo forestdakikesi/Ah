@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import VirtualJoyStickPlugin from 'phaser3-rex-plugins/plugins/virtualjoystick-plugin.js';
 
 const ASSET_BASE = import.meta.env.BASE_URL;
+const IS_EDITOR_PREVIEW = new URLSearchParams(window.location.search).get('editorPreview') === '1';
 
 const FRAME_W = 64;
 const FRAME_H = 64;
@@ -537,7 +538,8 @@ class MainScene extends Phaser.Scene {
 
     // Listen for tilemap updates from editor
     window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'tilemapUpdate') {
+      const isTrustedSource = event.source === window.parent || event.source === window.opener;
+      if (event.origin === window.location.origin && isTrustedSource && event.data?.type === 'tilemapUpdate') {
         this.applyTilemapData(event.data.tilemapData);
       }
     });
@@ -560,6 +562,10 @@ class MainScene extends Phaser.Scene {
       } catch (error) {
         console.warn('Stored tilemap could not be loaded:', error);
       }
+    }
+
+    if (IS_EDITOR_PREVIEW && window.parent !== window) {
+      window.parent.postMessage({ type: 'preview-ready' }, window.location.origin);
     }
 
     this.uiCamera = this.cameras.add();
