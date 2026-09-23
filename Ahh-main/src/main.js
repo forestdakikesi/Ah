@@ -99,6 +99,7 @@ class MainScene extends Phaser.Scene {
     this.playerSpawn = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
     this.activeTilemapData = null;
     this.editorObjectSprites = [];
+    this.proceduralDecorSprites = [];
   }
 
   preload() {
@@ -269,19 +270,43 @@ class MainScene extends Phaser.Scene {
   }
 
   createWorldMap() {
-    const tile = (id) => id + 1;
-    // Use new fields tileset - ground tiles 1-64
     const ground = Array.from({ length: MAP_TILES_H }, () => Array(MAP_TILES_W).fill(1));
     const beach = Array.from({ length: MAP_TILES_H }, () => Array(MAP_TILES_W).fill(0));
     const water = Array.from({ length: MAP_TILES_H }, () => Array(MAP_TILES_W).fill(0));
 
-    // Add ground variation using fields tiles
+    const seededTile = (x, y, start, count) => start + ((x * 37 + y * 53 + x * y * 7) % count);
+
     for (let y = 0; y < MAP_TILES_H; y += 1) {
       for (let x = 0; x < MAP_TILES_W; x += 1) {
-        const variation = (x * 17 + y * 31) % 64;
-        ground[y][x] = variation + 1;
+        ground[y][x] = seededTile(x, y, 1, 18);
       }
     }
+
+    const paintRect = (target, left, top, right, bottom, value) => {
+      for (let y = Math.max(0, top); y <= Math.min(MAP_TILES_H - 1, bottom); y += 1) {
+        for (let x = Math.max(0, left); x <= Math.min(MAP_TILES_W - 1, right); x += 1) {
+          target[y][x] = typeof value === 'function' ? value(x, y) : value;
+        }
+      }
+    };
+
+    const paintPath = (startX, startY, endX, endY, width = 2, value = 20) => {
+      const distance = Math.max(Math.abs(endX - startX), Math.abs(endY - startY));
+      for (let step = 0; step <= distance; step += 1) {
+        const ratio = distance ? step / distance : 0;
+        const centerX = Math.round(startX + (endX - startX) * ratio);
+        const centerY = Math.round(startY + (endY - startY) * ratio);
+        for (let offsetY = -width; offsetY <= width; offsetY += 1) {
+          for (let offsetX = -width; offsetX <= width; offsetX += 1) {
+            const x = centerX + offsetX;
+            const y = centerY + offsetY;
+            if (x >= 0 && x < MAP_TILES_W && y >= 0 && y < MAP_TILES_H && water[y][x] === 0) {
+              ground[y][x] = value + ((x + y) % 3);
+            }
+          }
+        }
+      }
+    };
 
     const paintEllipse = (centerX, centerY, radiusX, radiusY) => {
       for (let y = Math.max(0, centerY - radiusY - 2); y < Math.min(MAP_TILES_H, centerY + radiusY + 3); y += 1) {
@@ -314,26 +339,39 @@ class MainScene extends Phaser.Scene {
       }
     }
 
-    for (let step = 0; step < 43; step += 1) {
-      const x = Math.round(6 + step * 0.82);
-      const y = Math.round(54 - step * 0.58 + Math.sin(step * 0.22) * 1.5);
-      for (let offset = -1; offset <= 1; offset += 1) {
-        const pathY = y + offset;
-        if (x >= 0 && x < MAP_TILES_W && pathY >= 0 && pathY < MAP_TILES_H && !water[pathY][x]) {
-          ground[pathY][x] = 50;
+    paintRect(ground, 20, 20, 45, 44, (x, y) => 8 + ((x + y) % 5));
+    paintRect(ground, 27, 28, 38, 36, (x, y) => 20 + ((x + y) % 3));
+    paintPath(32, 32, 32, 8, 2, 20);
+    paintPath(32, 32, 8, 32, 2, 20);
+    paintPath(32, 32, 54, 32, 2, 20);
+    paintPath(32, 35, 45, 56, 2, 20);
+    paintPath(32, 35, 12, 54, 2, 20);
+    paintPath(8, 32, 6, 54, 1, 20);
+    paintRect(ground, 2, 3, 18, 28, (x, y) => 12 + ((x * 3 + y) % 8));
+    paintRect(ground, 47, 3, 62, 18, (x, y) => 28 + ((x + y * 2) % 8));
+    paintRect(ground, 39, 40, 62, 61, (x, y) => 22 + ((x * 2 + y) % 6));
+    paintPath(45, 40, 45, 61, 1, 20);
+    paintPath(54, 40, 54, 61, 1, 20);
+
+    for (let y = 27; y <= 37; y += 1) {
+      const riverX = Math.round(54 + Math.sin(y * 0.11) * 4);
+      for (let x = riverX - 2; x <= riverX + 2; x += 1) {
+        if (x >= 0 && x < MAP_TILES_W) {
+          water[y][x] = 0;
+          beach[y][x] = 0;
+          ground[y][x] = 21 + ((x + y) % 2);
         }
       }
     }
 
     const props = Array.from({ length: MAP_TILES_H }, () => Array(MAP_TILES_W).fill(0));
 
-    // Add floor decorations using FieldsTileset
     for (let y = 0; y < MAP_TILES_H; y += 1) {
       for (let x = 0; x < MAP_TILES_W; x += 1) {
-        const decorChance = Math.random();
-        if (decorChance < 0.02 && ground[y][x] !== 0 && water[y][x] === 0) {
-          // Add random grass/flower decorations (tiles 1-64)
-          const decorType = Math.floor(Math.random() * 64) + 1;
+        const inTown = x >= 20 && x <= 45 && y >= 20 && y <= 44;
+        const detailChance = (x * 19 + y * 11 + x * y) % 100;
+        if (!inTown && detailChance < 7 && water[y][x] === 0) {
+          const decorType = seededTile(x, y, 1, 18);
           props[y][x] = decorType;
         }
       }
@@ -341,10 +379,10 @@ class MainScene extends Phaser.Scene {
 
     // Add specific decorative tiles in patterns
     const decorPositions = [
-      [10, 10, 5], [15, 12, 8], [20, 8, 3], [25, 15, 6],
-      [30, 20, 4], [35, 25, 7], [40, 18, 2], [45, 22, 9],
-      [12, 30, 5], [18, 35, 8], [22, 40, 3], [28, 45, 6],
-      [35, 50, 4], [42, 55, 7], [48, 48, 2], [52, 52, 9]
+      [24, 24, 5], [40, 24, 8], [24, 40, 3], [41, 39, 6],
+      [8, 8, 4], [13, 15, 7], [17, 22, 2], [50, 7, 9],
+      [57, 12, 5], [60, 16, 8], [41, 48, 3], [48, 55, 6],
+      [57, 47, 4], [60, 58, 7], [12, 50, 2], [18, 56, 9]
     ];
     
     decorPositions.forEach(([x, y, tileId]) => {
@@ -393,96 +431,42 @@ class MainScene extends Phaser.Scene {
   }
 
   addDecorativeObjects() {
-    // Add grass decorations randomly
-    for (let i = 0; i < 30; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 6) + 1;
-      const key = `grass_${frame}`;
-      if (this.textures.exists(key)) {
-        const grass = this.add.image(x, y, key);
-        grass.setScale(1.0);
-        grass.setDepth(3 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    const place = (key, tileX, tileY, scale = 1, depthOffset = 3) => {
+      if (!this.textures.exists(key)) return;
+      const x = tileX * TILE_SIZE + TILE_SIZE / 2;
+      const y = tileY * TILE_SIZE + TILE_SIZE / 2;
+      const sprite = this.add.image(x, y, key);
+      sprite.setScale(scale);
+      sprite.setOrigin(0.5, 0.78);
+      sprite.setDepth(depthOffset + y / WORLD_HEIGHT);
+      this.proceduralDecorSprites.push(sprite);
+    };
 
-    // Add stone decorations
-    for (let i = 0; i < 15; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 6) + 1;
-      const key = `stone_${frame}`;
-      if (this.textures.exists(key)) {
-        const stone = this.add.image(x, y, key);
-        stone.setScale(1.2);
-        stone.setDepth(3 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    const placeRow = (keyPrefix, positions, frameCount, scale, depthOffset = 3) => {
+      positions.forEach(([x, y], index) => {
+        place(`${keyPrefix}_${(index % frameCount) + 1}`, x, y, scale, depthOffset);
+      });
+    };
 
-    // Add box decorations
-    for (let i = 0; i < 10; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 5) + 1;
-      const key = `box_${frame}`;
-      if (this.textures.exists(key)) {
-        const box = this.add.image(x, y, key);
-        box.setScale(1.0);
-        box.setDepth(3 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    placeRow('house', [[23, 24], [40, 24], [23, 39]], 4, 2, 5);
+    placeRow('tent', [[28, 23], [35, 23], [43, 31], [22, 34], [39, 41]], 4, 1.5, 4);
+    placeRow('box', [[26, 27], [29, 26], [37, 27], [42, 28], [25, 37], [40, 37], [35, 42], [46, 35], [18, 31], [48, 39]], 5, 1, 4);
 
-    // Add shadow decorations
-    for (let i = 0; i < 8; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 6) + 1;
-      const key = `shadow_${frame}`;
-      if (this.textures.exists(key)) {
-        const shadow = this.add.image(x, y, key);
-        shadow.setScale(1.0);
-        shadow.setDepth(2 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    placeRow('grass', [[5, 7], [9, 9], [14, 7], [6, 14], [11, 16], [16, 13], [4, 21], [9, 24], [15, 22], [18, 18], [6, 27], [13, 27]], 6, 1, 3);
+    placeRow('stone', [[4, 11], [8, 18], [15, 10], [17, 24], [3, 25], [12, 20]], 6, 1.2, 3);
+    placeRow('decor', [[7, 6], [12, 8], [16, 16], [5, 20], [10, 23], [14, 26]], 17, 1, 3);
 
-    // Add tent decorations
-    for (let i = 0; i < 5; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 4) + 1;
-      const key = `tent_${frame}`;
-      if (this.textures.exists(key)) {
-        const tent = this.add.image(x, y, key);
-        tent.setScale(1.5);
-        tent.setDepth(4 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    placeRow('stone', [[49, 6], [54, 6], [59, 8], [51, 12], [57, 14], [61, 17], [48, 17], [55, 18]], 6, 1.3, 3);
+    placeRow('box', [[50, 10], [53, 10], [58, 12], [60, 15]], 5, 1, 4);
+    placeRow('shadow', [[49, 6], [54, 6], [59, 8], [51, 12], [57, 14], [61, 17], [48, 17], [55, 18]], 6, 1, 2);
 
-    // Add house decorations
-    for (let i = 0; i < 3; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 4) + 1;
-      const key = `house_${frame}`;
-      if (this.textures.exists(key)) {
-        const house = this.add.image(x, y, key);
-        house.setScale(2.0);
-        house.setDepth(5 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    placeRow('grass', [[42, 45], [47, 45], [52, 45], [57, 45], [60, 48], [42, 52], [48, 52], [57, 53], [42, 59], [49, 59], [56, 59]], 6, 1, 3);
+    placeRow('box', [[44, 47], [50, 47], [55, 50], [60, 54], [47, 57]], 5, 1, 4);
 
-    // Add decor objects
-    for (let i = 0; i < 20; i++) {
-      const x = Math.random() * WORLD_WIDTH;
-      const y = Math.random() * WORLD_HEIGHT;
-      const frame = Math.floor(Math.random() * 17) + 1;
-      const key = `decor_${frame}`;
-      if (this.textures.exists(key)) {
-        const decor = this.add.image(x, y, key);
-        decor.setScale(1.0);
-        decor.setDepth(3 + (y / WORLD_HEIGHT) * 2);
-      }
-    }
+    placeRow('shadow', [[23, 24], [40, 24], [23, 39], [28, 23], [35, 23], [43, 31], [49, 6], [57, 14]], 6, 1, 2);
+    placeRow('decor', [[30, 29], [34, 29], [30, 35], [34, 35], [51, 31], [57, 31], [45, 44], [54, 44]], 17, 1, 3);
+    place('animated_Door1', 23, 25, 1.2, 5);
+    place('animated_DoubleDoor1', 40, 25, 1.2, 5);
   }
 
   create() {
@@ -820,6 +804,8 @@ class MainScene extends Phaser.Scene {
 
     this.activeTilemapData = normalizedTilemapData;
     localStorage.setItem('tilemapData', JSON.stringify(normalizedTilemapData));
+    this.proceduralDecorSprites.forEach((sprite) => sprite.destroy());
+    this.proceduralDecorSprites = [];
 
     const layerLookup = {};
     normalizedTilemapData.layers.forEach((layer) => {
@@ -1068,17 +1054,17 @@ class MainScene extends Phaser.Scene {
 
   createAnimals() {
     const spawnPlan = [
-      ['fox', 2],
-      ['hare', 2],
-      ['deer', 2],
-      ['black_grouse', 2],
-      ['boar', 2]
+      ['fox', 3, { minX: 3, maxX: 18, minY: 5, maxY: 28 }],
+      ['hare', 3, { minX: 38, maxX: 62, minY: 41, maxY: 61 }],
+      ['deer', 2, { minX: 14, maxX: 26, minY: 13, maxY: 32 }],
+      ['black_grouse', 2, { minX: 4, maxX: 18, minY: 4, maxY: 27 }],
+      ['boar', 2, { minX: 47, maxX: 62, minY: 4, maxY: 19 }]
     ];
 
-    spawnPlan.forEach(([species, count]) => {
+    spawnPlan.forEach(([species, count, region]) => {
       for (let index = 0; index < count; index += 1) {
         const definition = ANIMAL_DEFS[species];
-        const spawnPosition = this.getSafeSpawnPosition();
+        const spawnPosition = this.getSafeSpawnPosition(region);
         const sprite = this.physics.add.sprite(
           spawnPosition.x,
           spawnPosition.y,
@@ -1113,10 +1099,14 @@ class MainScene extends Phaser.Scene {
     });
   }
 
-  getSafeSpawnPosition() {
+  getSafeSpawnPosition(region = null) {
     for (let attempt = 0; attempt < 40; attempt += 1) {
-      const x = Phaser.Math.Between(180, WORLD_WIDTH - 180);
-      const y = Phaser.Math.Between(180, WORLD_HEIGHT - 180);
+      const x = region
+        ? Phaser.Math.Between(region.minX * TILE_SIZE, region.maxX * TILE_SIZE)
+        : Phaser.Math.Between(180, WORLD_WIDTH - 180);
+      const y = region
+        ? Phaser.Math.Between(region.minY * TILE_SIZE, region.maxY * TILE_SIZE)
+        : Phaser.Math.Between(180, WORLD_HEIGHT - 180);
       const tile = this.waterLayer.getTileAtWorldXY(x, y);
       if (!tile || tile.index <= 0) {
         return { x, y };
