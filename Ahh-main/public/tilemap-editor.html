@@ -57,8 +57,7 @@
         }
         
         .map-preview {
-            flex: 1 1 44%;
-            min-width: 0;
+            display: none;
             background: #1a1a2e;
             border-radius: 8px;
             overflow: auto;
@@ -70,9 +69,10 @@
         }
 
         .game-preview {
-            flex: 1 1 56%;
-            min-width: 280px;
-            min-height: 320px;
+            flex: 1 1 auto;
+            width: 100%;
+            min-width: 0;
+            min-height: 520px;
             overflow: hidden;
             position: relative;
             background: #07130d;
@@ -82,7 +82,7 @@
         }
 
         .game-preview::before {
-            content: 'GERÇEK OYUN ÖNİZLEMESİ';
+            content: 'CANLI OYUN EDITÖRÜ';
             position: absolute;
             z-index: 2;
             top: 10px;
@@ -509,6 +509,10 @@
                 flex: none;
             }
 
+            .map-preview {
+                display: none;
+            }
+
             #gamePreview {
                 min-height: 58dvh;
             }
@@ -521,7 +525,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <h2>🗺️ Ultimate Editor v4</h2>
+        <h2>🗺️ Live Game Editor</h2>
         
         <div class="control-group">
             <label>Harita Boyutu</label>
@@ -569,7 +573,7 @@
                 <button onclick="importJSON()">📥 İçe Aktar</button>
                 <button onclick="copyToClipboard()">📋 Kopyala</button>
                 <button onclick="loadFromClipboard()">📋 Yükle</button>
-                <button onclick="applyToGame()" style="background: linear-gradient(135deg, #4CAF50, #2ecc71);">🎮 Oyuna Uygula</button>
+                <button onclick="applyToGame()" style="background: linear-gradient(135deg, #4CAF50, #2ecc71);">🎮 Canlı Oyuna Uygula</button>
                 <button onclick="saveToGame()" style="background: linear-gradient(135deg, #2196F3, #3498db);">💾 Kaydet</button>
             </div>
         </div>
@@ -636,7 +640,7 @@
         <div class="controls">
             <label>JSON Verisi</label>
             <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
-            <button onclick="applyJSON()">JSON'i Uygula</button>
+            <button onclick="applyJSON()">JSON'i Canlı Oyuna Uygula</button>
         </div>
     </div>
 
@@ -841,9 +845,49 @@
                 if (event.origin !== window.location.origin || event.source !== previewFrame.contentWindow) return;
                 if (event.data?.type === 'preview-ready') {
                     broadcastMapUpdate(true);
-                    updateStatus('Gerçek oyun önizlemesi bağlandı');
+                    updateStatus('Canlı oyun editörü bağlandı');
+                }
+                if (event.data?.type === 'editor-world-pointer') {
+                    applyLiveWorldPointer(event.data);
                 }
             });
+        }
+
+        function applyLiveWorldPointer(pointerEvent) {
+            if (pointerEvent.action === 'up') {
+                isDrawing = false;
+                lastDrawPosition = null;
+                return;
+            }
+
+            const tileX = Math.floor(Number(pointerEvent.x) / tilemapData.tileSize);
+            const tileY = Math.floor(Number(pointerEvent.y) / tilemapData.tileSize);
+            if (tileX < 0 || tileY < 0 || tileX >= tilemapData.width || tileY >= tilemapData.height) return;
+
+            const position = { x: tileX, y: tileY };
+            document.getElementById('mouseCoords').textContent = `X: ${tileX}, Y: ${tileY}`;
+            document.getElementById('coordsText').textContent = `X: ${tileX}, Y: ${tileY}`;
+
+            if (pointerEvent.action === 'down') {
+                isDrawing = true;
+                if (currentTool === 'fill') {
+                    fillTile(tileX, tileY);
+                } else if (currentTool === 'spawn') {
+                    addSpawnPointAt(tileX, tileY);
+                } else if (currentTool === 'move_spawn') {
+                    moveSpawnPoint(tileX, tileY);
+                } else {
+                    paintTile(tileX, tileY);
+                }
+                lastDrawPosition = position;
+                return;
+            }
+
+            if (!isDrawing || (position.x === lastDrawPosition?.x && position.y === lastDrawPosition?.y)) return;
+            if (currentTool !== 'fill' && currentTool !== 'spawn' && currentTool !== 'move_spawn') {
+                paintTile(tileX, tileY);
+            }
+            lastDrawPosition = position;
         }
         
         function loadFromLocalStorage() {

@@ -577,6 +577,26 @@ class MainScene extends Phaser.Scene {
 
     if (IS_EDITOR_PREVIEW && window.parent !== window) {
       window.parent.postMessage({ type: 'preview-ready' }, window.location.origin);
+      this.input.on('pointerdown', (pointer) => {
+        window.parent.postMessage({
+          type: 'editor-world-pointer',
+          action: 'down',
+          x: pointer.worldX,
+          y: pointer.worldY
+        }, window.location.origin);
+      });
+      this.input.on('pointermove', (pointer) => {
+        if (!pointer.isDown) return;
+        window.parent.postMessage({
+          type: 'editor-world-pointer',
+          action: 'move',
+          x: pointer.worldX,
+          y: pointer.worldY
+        }, window.location.origin);
+      });
+      this.input.on('pointerup', () => {
+        window.parent.postMessage({ type: 'editor-world-pointer', action: 'up' }, window.location.origin);
+      });
     }
 
     this.uiCamera = this.cameras.add();
