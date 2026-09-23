@@ -5,10 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Offline RPG</title>
     <style>
+      :root {
+        --ui-ink: #eef7f7;
+        --ui-muted: #8eabb3;
+        --ui-panel: rgba(7, 18, 29, 0.86);
+        --ui-line: rgba(151, 210, 216, 0.25);
+        --ui-accent: #7be0d0;
+        --ui-gold: #f0c879;
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-top: env(safe-area-inset-top, 0px);
+      }
+
       html, body, #app {
         margin: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100%;
+        min-height: 100dvh;
         overflow: hidden;
         background: #07170d;
         touch-action: none;
@@ -16,17 +28,139 @@
       }
 
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Trebuchet MS", system-ui, sans-serif;
       }
 
       canvas {
         display: block;
         touch-action: none;
       }
+
+      #game-ui {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+        color: var(--ui-ink);
+        font-size: 12px;
+      }
+
+      .hud-card,
+      .quest-card,
+      .status-chip,
+      .control-button,
+      .joystick-zone {
+        border: 1px solid var(--ui-line);
+        background: linear-gradient(145deg, rgba(11, 31, 40, 0.94), rgba(5, 15, 25, 0.84));
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255,255,255,0.08);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+
+      .hud-card {
+        position: absolute;
+        top: calc(12px + var(--safe-top));
+        left: 12px;
+        width: min(330px, calc(100vw - 24px));
+        padding: 12px 14px;
+        border-radius: 18px;
+      }
+
+      .hud-heading { display: flex; align-items: center; gap: 10px; }
+      .hud-level {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        color: #271b08;
+        background: radial-gradient(circle at 35% 30%, #fff0ad, #dba94b 72%);
+        font: 700 18px Georgia, serif;
+        box-shadow: 0 0 0 2px rgba(255,237,168,0.5), 0 4px 12px rgba(228,177,70,0.25);
+      }
+      .hud-name { font-weight: 800; letter-spacing: .05em; }
+      .hud-zone { color: var(--ui-muted); font-size: 10px; letter-spacing: .08em; margin-top: 3px; }
+      .hud-row { display: flex; justify-content: space-between; color: var(--ui-muted); font-size: 10px; margin-top: 10px; }
+      .meter { height: 8px; margin-top: 5px; overflow: hidden; border-radius: 999px; background: rgba(0,0,0,.35); }
+      .meter > span { display: block; width: 100%; height: 100%; border-radius: inherit; transition: width .25s ease; }
+      #dom-hp-fill { background: linear-gradient(90deg, #48c979, #9ae47d); }
+      #dom-xp-fill { background: linear-gradient(90deg, #4dbadf, #8ce8e5); }
+
+      .quest-card {
+        position: absolute;
+        top: calc(154px + var(--safe-top));
+        left: 12px;
+        padding: 8px 11px;
+        border-radius: 12px;
+        color: var(--ui-gold);
+        font-size: 10px;
+        letter-spacing: .03em;
+      }
+
+      .status-chip {
+        position: absolute;
+        top: calc(14px + var(--safe-top));
+        right: 12px;
+        padding: 8px 11px;
+        border-radius: 999px;
+        color: var(--ui-accent);
+        font-weight: 700;
+        font-size: 10px;
+      }
+
+      .status-chip::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #63e69d; box-shadow: 0 0 12px #63e69d; }
+
+      .mobile-controls { position: absolute; inset: auto 0 0; padding: 0 14px calc(14px + var(--safe-bottom)); display: flex; justify-content: space-between; align-items: end; }
+      .joystick-zone { pointer-events: auto; position: relative; width: 116px; height: 116px; border-radius: 50%; touch-action: none; }
+      .joystick-zone::before { content: ""; position: absolute; inset: 17px; border: 1px solid rgba(123,224,208,.3); border-radius: 50%; }
+      .joystick-knob { position: absolute; left: 50%; top: 50%; width: 42px; height: 42px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d9fff4, #67baa9); box-shadow: 0 4px 14px rgba(0,0,0,.3); pointer-events: none; }
+      .action-stack { display: flex; align-items: end; gap: 10px; pointer-events: auto; }
+      .control-button { display: grid; place-items: center; border-radius: 50%; color: white; font-weight: 800; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      .control-button:active { transform: scale(.92); filter: brightness(1.2); }
+      .control-button.attack { width: 72px; height: 72px; background: linear-gradient(145deg, #278ed1, #145278); }
+      .control-button.equip { width: 54px; height: 54px; background: linear-gradient(145deg, #8664d6, #493181); }
+      .control-button.bag { position: absolute; top: calc(66px + var(--safe-top)); right: 12px; width: 42px; height: 42px; pointer-events: auto; background: linear-gradient(145deg, #3c7d87, #1b424d); }
+      .control-glyph { font-size: 25px; line-height: 1; }
+      .control-label { display: block; margin-top: 2px; font-size: 9px; letter-spacing: .06em; }
+
+      #dom-inventory { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(1, 7, 12, .65); pointer-events: auto; }
+      #dom-inventory.open { display: flex; }
+      .inventory-panel { width: min(360px, 100%); padding: 20px; border-radius: 20px; background: #0a1a27; border: 1px solid var(--ui-line); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+      .inventory-title { display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 800; }
+      .inventory-close { border: 0; color: var(--ui-muted); background: transparent; font-size: 23px; }
+      .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 18px; }
+      .inventory-slot { padding: 14px 10px; border-radius: 13px; color: var(--ui-muted); background: #102b3a; border: 1px solid rgba(151,210,216,.15); }
+      .inventory-slot strong { display: block; color: var(--ui-ink); margin-bottom: 5px; }
+
+      @media (max-width: 600px) {
+        .hud-card { top: calc(8px + var(--safe-top)); left: 8px; width: min(272px, calc(100vw - 16px)); padding: 10px 11px; }
+        .quest-card { top: calc(136px + var(--safe-top)); left: 8px; }
+        .status-chip { top: calc(8px + var(--safe-top)); right: 8px; }
+        .mobile-controls { padding-left: 10px; padding-right: 10px; padding-bottom: calc(10px + var(--safe-bottom)); }
+        .joystick-zone { width: 96px; height: 96px; }
+        .joystick-knob { width: 36px; height: 36px; }
+        .control-button.attack { width: 64px; height: 64px; }
+        .control-button.equip { width: 48px; height: 48px; }
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="game-ui" aria-hidden="true">
+      <section class="hud-card">
+        <div class="hud-heading"><div class="hud-level" id="dom-level">1</div><div><div class="hud-name">AHRON <span id="dom-rank">• WANDERER</span></div><div class="hud-zone">MEADOWFALL / CENTRAL WARD</div></div></div>
+        <div class="hud-row"><span id="dom-hp-label">HP 100 / 100</span><span id="dom-hunts">HUNTS 0</span></div><div class="meter"><span id="dom-hp-fill"></span></div>
+        <div class="hud-row"><span id="dom-xp-label">XP 0 / 100</span><span id="dom-weapon">UNARMED</span></div><div class="meter"><span id="dom-xp-fill"></span></div>
+      </section>
+      <div class="quest-card">QUEST · Secure the town road</div>
+      <div class="status-chip">LIVE</div>
+      <button class="control-button bag" id="dom-bag" type="button"><span class="control-glyph">▣</span></button>
+      <div class="mobile-controls">
+        <div class="joystick-zone" id="dom-joystick"><div class="joystick-knob" id="dom-joystick-knob"></div></div>
+        <div class="action-stack"><button class="control-button equip" id="dom-equip" type="button"><span class="control-glyph">◇</span><span class="control-label">GEAR</span></button><button class="control-button attack" id="dom-attack" type="button"><span class="control-glyph">⚔</span><span class="control-label">ATTACK</span></button></div>
+      </div>
+      <div id="dom-inventory"><section class="inventory-panel"><div class="inventory-title">Field Loadout <button class="inventory-close" id="dom-inventory-close" type="button">×</button></div><div class="inventory-grid"><div class="inventory-slot"><strong>Iron Sword</strong>ATK 20</div><div class="inventory-slot"><strong>Red Potion</strong>HP +25</div><div class="inventory-slot"><strong>Trail Boots</strong>SPD +5</div><div class="inventory-slot"><strong>Hunter Mark</strong>XP +10%</div></div></section></div>
+    </div>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

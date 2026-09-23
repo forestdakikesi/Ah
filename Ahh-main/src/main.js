@@ -616,6 +616,8 @@ class MainScene extends Phaser.Scene {
     this.createMobileControls();
     this.createPremiumHud();
     this.createInventoryPanel();
+    this.setupDomInterface();
+    this.uiContainer.setVisible(false);
 
     this.player.on('animationcomplete', (anim) => {
       if (anim.key && anim.key.startsWith('sword_attack_')) {
@@ -1407,6 +1409,95 @@ class MainScene extends Phaser.Scene {
     this.uiContainer.add(this.combatHint);
   }
 
+  setupDomInterface() {
+    this.domJoystick = { active: false, force: 0, forceX: 0, forceY: 0, radius: 48 };
+    this.domJoystickZone = document.getElementById('dom-joystick');
+    this.domJoystickKnob = document.getElementById('dom-joystick-knob');
+    this.domInventory = document.getElementById('dom-inventory');
+
+    document.getElementById('dom-attack')?.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      this.triggerAttack();
+    });
+    document.getElementById('dom-equip')?.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      this.currentWeapon = this.currentWeapon === 'sword' ? 'unarmed' : 'sword';
+      this.updateEquipButtonLabel();
+      const weaponSuffix = this.currentWeapon === 'sword' ? 'sword' : 'unarmed';
+      this.safePlayAnimation(this.player, `${weaponSuffix}_idle_${this.lastFacing || 'front'}`, `${weaponSuffix}_idle_front`);
+    });
+    document.getElementById('dom-bag')?.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      this.toggleInventory();
+    });
+    document.getElementById('dom-inventory-close')?.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      this.toggleInventory();
+    });
+
+    const updateJoystick = (event) => {
+      if (!this.domJoystickZone) return;
+      const bounds = this.domJoystickZone.getBoundingClientRect();
+      const centerX = bounds.left + bounds.width / 2;
+      const centerY = bounds.top + bounds.height / 2;
+      const maximum = bounds.width * 0.34;
+      const deltaX = event.clientX - centerX;
+      const deltaY = event.clientY - centerY;
+      const distance = Math.hypot(deltaX, deltaY);
+      const scale = distance > maximum ? maximum / distance : 1;
+      const offsetX = deltaX * scale;
+      const offsetY = deltaY * scale;
+      this.domJoystick.active = true;
+      this.domJoystick.forceX = offsetX;
+      this.domJoystick.forceY = offsetY;
+      this.domJoystick.force = Math.hypot(offsetX, offsetY);
+      this.domJoystick.radius = maximum;
+      if (this.domJoystickKnob) {
+        this.domJoystickKnob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+      }
+    };
+    const releaseJoystick = () => {
+      this.domJoystick.active = false;
+      this.domJoystick.force = 0;
+      this.domJoystick.forceX = 0;
+      this.domJoystick.forceY = 0;
+      if (this.domJoystickKnob) this.domJoystickKnob.style.transform = 'translate(-50%, -50%)';
+    };
+    this.domJoystickZone?.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      this.domJoystickZone.setPointerCapture?.(event.pointerId);
+      updateJoystick(event);
+    });
+    this.domJoystickZone?.addEventListener('pointermove', (event) => {
+      if (this.domJoystick.active) updateJoystick(event);
+    });
+    this.domJoystickZone?.addEventListener('pointerup', releaseJoystick);
+    this.domJoystickZone?.addEventListener('pointercancel', releaseJoystick);
+    this.domJoystickZone?.addEventListener('pointerleave', () => {
+      if (this.domJoystick.active) releaseJoystick();
+    });
+    this.syncDomHud();
+  }
+
+  syncDomHud() {
+    const healthRatio = Phaser.Math.Clamp(this.playerHealth / MAX_PLAYER_HEALTH, 0, 1);
+    const xpRatio = Phaser.Math.Clamp(this.playerXp / this.playerXpToNext, 0, 1);
+    const level = document.getElementById('dom-level');
+    const hpLabel = document.getElementById('dom-hp-label');
+    const xpLabel = document.getElementById('dom-xp-label');
+    const hpFill = document.getElementById('dom-hp-fill');
+    const xpFill = document.getElementById('dom-xp-fill');
+    const hunts = document.getElementById('dom-hunts');
+    const weapon = document.getElementById('dom-weapon');
+    if (level) level.textContent = String(this.playerLevel);
+    if (hpLabel) hpLabel.textContent = `HP ${Math.max(0, this.playerHealth)} / ${MAX_PLAYER_HEALTH}`;
+    if (xpLabel) xpLabel.textContent = `XP ${this.playerXp} / ${this.playerXpToNext}`;
+    if (hpFill) hpFill.style.width = `${healthRatio * 100}%`;
+    if (xpFill) xpFill.style.width = `${xpRatio * 100}%`;
+    if (hunts) hunts.textContent = `HUNTS ${this.killCount}`;
+    if (weapon) weapon.textContent = this.currentWeapon === 'sword' ? 'SWORD' : 'UNARMED';
+  }
+
   createActionButton(labelText, x, y, radius, color, onPress, iconType = labelText.toLowerCase()) {
     const container = this.add.container(x, y);
     const bg = this.add.circle(0, 0, radius, color, 0.85).setStrokeStyle(4, 0xffffff, 0.9);
@@ -1488,6 +1579,7 @@ class MainScene extends Phaser.Scene {
     }
     const text = this.currentWeapon === 'sword' ? 'UNEQUIP' : 'EQUIP';
     this.equipButton.label.setText(text);
+    this.syncDomHud();
   }
 
   createPremiumHud() {
@@ -1594,11 +1686,13 @@ class MainScene extends Phaser.Scene {
       this.killText.setText(`HUNTS  ${this.killCount}   •   ACTIVE`);
     }
     this.updatePlayerNameplate();
+    this.syncDomHud();
   }
 
   updateXpDisplay() {
     if (!this.xpBar) {
       this.updatePlayerNameplate();
+      this.syncDomHud();
       return;
     }
 
@@ -1623,6 +1717,7 @@ class MainScene extends Phaser.Scene {
     });
     this.levelText.setText(String(this.playerLevel));
     this.updatePlayerNameplate();
+    this.syncDomHud();
   }
 
   createInventoryPanel() {
@@ -1699,6 +1794,7 @@ class MainScene extends Phaser.Scene {
 
   toggleInventory() {
     this.inventoryOpen = !this.inventoryOpen;
+    this.domInventory?.classList.toggle('open', this.inventoryOpen);
     this.inventoryBackdrop.setVisible(this.inventoryOpen);
     this.inventoryPanel.setVisible(this.inventoryOpen);
     this.inventoryCloseButton.container.setVisible(this.inventoryOpen);
@@ -2011,11 +2107,12 @@ class MainScene extends Phaser.Scene {
     let moveSpeed = PLAYER_SPEED;
     let usingJoystick = false;
 
-    if (this.joystick && this.joystick.force > 5) {
-      const force = this.joystick.force;
-      const magnitude = Phaser.Math.Clamp(force / this.joystick.radius, 0, 1);
-      const nx = this.joystick.forceX / Math.max(1, force);
-      const ny = this.joystick.forceY / Math.max(1, force);
+    const joystickInput = this.domJoystick?.active ? this.domJoystick : this.joystick;
+    if (joystickInput && joystickInput.force > 5) {
+      const force = joystickInput.force;
+      const magnitude = Phaser.Math.Clamp(force / joystickInput.radius, 0, 1);
+      const nx = joystickInput.forceX / Math.max(1, force);
+      const ny = joystickInput.forceY / Math.max(1, force);
       vx = nx * (magnitude > 0.7 ? RUN_SPEED : PLAYER_SPEED);
       vy = ny * (magnitude > 0.7 ? RUN_SPEED : PLAYER_SPEED);
       moveSpeed = magnitude > 0.7 ? RUN_SPEED : PLAYER_SPEED;
@@ -2044,7 +2141,7 @@ class MainScene extends Phaser.Scene {
 
     this.player.setVelocity(0, 0);
 
-    if (usingJoystick && this.joystick.force <= 5) {
+    if (usingJoystick && joystickInput.force <= 5) {
       this.playIdleAnimation();
       return;
     }
