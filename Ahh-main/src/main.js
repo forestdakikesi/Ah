@@ -33,8 +33,8 @@ const TILE_MARGIN = 1;
 const TILE_SPACING = 2;
 const MAP_TILES_W = WORLD_WIDTH / TILE_SIZE;
 const MAP_TILES_H = WORLD_HEIGHT / TILE_SIZE;
-const PLAYER_SPEED = 150;
-const RUN_SPEED = 240;
+const PLAYER_SPEED = 105;
+const RUN_SPEED = 175;
 const MAX_PLAYER_HEALTH = 100;
 const PLAYER_DISPLAY_NAME = 'AHRON';
 const ANIMAL_DEFS = {
@@ -1148,6 +1148,8 @@ class MainScene extends Phaser.Scene {
           nextDecisionAt: 0,
           pauseUntil: 0,
           sprintUntil: 0,
+          lastX: spawnPosition.x,
+          lastY: spawnPosition.y,
           attackCooldownAt: 0,
           hurtUntil: 0,
           attacking: false,
@@ -1342,9 +1344,19 @@ class MainScene extends Phaser.Scene {
   }
 
   updateAnimalDirection(animal) {
-    const { x, y } = animal.sprite.body.velocity;
-    if (Math.abs(x) > 1 || Math.abs(y) > 1) {
-      animal.direction = this.getDirectionKey(x, y);
+    const movementX = animal.sprite.x - animal.lastX;
+    const movementY = animal.sprite.y - animal.lastY;
+    animal.lastX = animal.sprite.x;
+    animal.lastY = animal.sprite.y;
+    if (Math.abs(movementX) > 0.2 || Math.abs(movementY) > 0.2) {
+      animal.direction = this.getDirectionKey(movementX, movementY);
+      return;
+    }
+
+    const velocityX = animal.sprite.body.velocity.x;
+    const velocityY = animal.sprite.body.velocity.y;
+    if (Math.abs(velocityX) > 1 || Math.abs(velocityY) > 1) {
+      animal.direction = this.getDirectionKey(velocityX, velocityY);
     }
   }
 
@@ -1357,6 +1369,7 @@ class MainScene extends Phaser.Scene {
 
       const sprite = animal.sprite;
       this.keepAnimalInsideRegion(animal, time);
+      this.updateAnimalDirection(animal);
       if (animal.hurtUntil > time) {
         sprite.setVelocity(0, 0);
         this.playAnimalAnimation(animal, 'hurt');
