@@ -38,30 +38,45 @@ const MAX_PLAYER_HEALTH = 100;
 const PLAYER_DISPLAY_NAME = 'AHRON';
 const ANIMAL_DEFS = {
   fox: {
+    displayName: 'Orman Tilkisi',
+    level: 3,
+    collisionRadius: 26,
     actions: { idle: 4, walk: 6, run: 6, hurt: 4, death: 6 },
     atlasFiles: { idle: 'Fox_Idle.png', walk: 'Fox_walk.png', run: 'Fox_Run.png', hurt: 'Fox_Hurt.png', death: 'Fox_Death.png' },
     scale: 1.35,
     speed: 62
   },
   hare: {
+    displayName: 'Çayır Tavşanı',
+    level: 2,
+    collisionRadius: 22,
     actions: { idle: 4, walk: 5, run: 6, hurt: 4, death: 6 },
     atlasFiles: { idle: 'Hare_Idle.png', walk: 'Hare_Walk.png', run: 'Hare_Run.png', hurt: 'Hare_Hurt.png', death: 'Hare_Death.png' },
     scale: 1.15,
     speed: 82
   },
   deer: {
+    displayName: 'Gümüş Geyik',
+    level: 5,
+    collisionRadius: 30,
     actions: { idle: 4, walk: 6, run: 6, hurt: 4, death: 7 },
     atlasFiles: { idle: 'Deer_Idle.png', walk: 'Deer_Walk.png', run: 'Deer_Run.png', hurt: 'Deer_Hurt.png', death: 'Deer_Death.png' },
     scale: 1.45,
     speed: 72
   },
   black_grouse: {
+    displayName: 'Kara Orman Kuşu',
+    level: 2,
+    collisionRadius: 24,
     actions: { idle: 4, walk: 6, run: 0, flight: 6, hurt: 4, death: 6 },
     atlasFiles: { idle: 'Black_grouse_Idle.png', walk: 'Black_grouse_Walk.png', flight: 'Black_grouse_Flight.png', hurt: 'Black_grouse_Hurt.png', death: 'Black_grouse_Death.png' },
     scale: 1.15,
     speed: 68
   },
   boar: {
+    displayName: 'Yaban Domuzu',
+    level: 8,
+    collisionRadius: 32,
     actions: { idle: 4, walk: 6, run: 5, attack: 5, hurt: 4, death: 6 },
     atlasFiles: { idle: 'Boar_Idle.png', walk: 'Boar_Walk.png', run: 'Boar_Run.png', attack: 'Boar_Attack.png', hurt: 'Boar_Hurt.png', death: 'Boar_Death.png' },
     scale: 1.35,
@@ -1073,6 +1088,7 @@ class MainScene extends Phaser.Scene {
         const animal = {
           species,
           definition,
+          region,
           sprite,
           health: species === 'boar' ? 45 : 25,
           maxHealth: species === 'boar' ? 45 : 25,
@@ -1092,11 +1108,25 @@ class MainScene extends Phaser.Scene {
         sprite.body.setSize(34, 38);
         sprite.body.setOffset(15, 20);
         sprite.setData('animal', animal);
+        this.createAnimalNameplate(animal);
         this.animals.push(animal);
         this.playAnimalAnimation(animal, 'idle');
         this.chooseAnimalDirection(animal, 0);
       }
     });
+
+    for (let firstIndex = 0; firstIndex < this.animals.length; firstIndex += 1) {
+      for (let secondIndex = firstIndex + 1; secondIndex < this.animals.length; secondIndex += 1) {
+        this.physics.add.collider(
+          this.animals[firstIndex].sprite,
+          this.animals[secondIndex].sprite,
+          this.handleAnimalCollision,
+          null,
+          this
+        );
+      }
+      this.physics.add.collider(this.player, this.animals[firstIndex].sprite);
+    }
   }
 
   getSafeSpawnPosition(region = null) {
@@ -1114,6 +1144,89 @@ class MainScene extends Phaser.Scene {
     }
 
     return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+  }
+
+  createAnimalNameplate(animal) {
+    const nameplate = this.add.container(animal.sprite.x, animal.sprite.y - 34);
+    nameplate.setDepth(28);
+    nameplate.setScale(0.72);
+
+    const panel = this.add.graphics();
+    panel.fillStyle(0x07121d, 0.9);
+    panel.fillRoundedRect(-62, -17, 124, 31, 7);
+    panel.lineStyle(1, 0x69879d, 0.9);
+    panel.strokeRoundedRect(-62, -17, 124, 31, 7);
+    nameplate.add(panel);
+
+    const levelBadge = this.add.graphics();
+    levelBadge.fillStyle(animal.definition.level >= 7 ? 0xd66b54 : 0x6bc5a8, 1);
+    levelBadge.fillCircle(-49, -6, 8);
+    levelBadge.lineStyle(1, 0xeafff3, 0.8);
+    levelBadge.strokeCircle(-49, -6, 8);
+    nameplate.add(levelBadge);
+
+    const levelText = this.add.text(-49, -6, String(animal.definition.level), {
+      fontFamily: 'Georgia, serif',
+      fontSize: '9px',
+      color: '#06131a',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    nameplate.add(levelText);
+
+    const nameText = this.add.text(-36, -14, animal.definition.displayName, {
+      fontFamily: 'Trebuchet MS, sans-serif',
+      fontSize: '11px',
+      color: '#f4f7ef',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0);
+    nameplate.add(nameText);
+
+    const hpBar = this.add.graphics();
+    nameplate.add(hpBar);
+    animal.nameplate = nameplate;
+    animal.nameText = nameText;
+    animal.hpBar = hpBar;
+    this.updateAnimalNameplate(animal);
+  }
+
+  updateAnimalNameplate(animal) {
+    if (!animal.nameplate) return;
+    animal.nameplate.setPosition(animal.sprite.x, animal.sprite.y - animal.sprite.displayHeight * 0.58 - 17);
+    animal.nameplate.setVisible(animal.sprite.visible && !animal.dead);
+    animal.hpBar.clear();
+    animal.hpBar.fillStyle(0x18242c, 1);
+    animal.hpBar.fillRoundedRect(-53, 7, 106, 4, 2);
+    animal.hpBar.fillStyle(animal.health / animal.maxHealth < 0.35 ? 0xe86b62 : 0x65d68f, 1);
+    animal.hpBar.fillRoundedRect(-53, 7, Math.max(2, 106 * (animal.health / animal.maxHealth)), 4, 2);
+  }
+
+  handleAnimalCollision(firstSprite, secondSprite) {
+    const firstAnimal = firstSprite?.getData('animal');
+    const secondAnimal = secondSprite?.getData('animal');
+    if (!firstAnimal || !secondAnimal || firstAnimal.dead || secondAnimal.dead) return;
+
+    const distance = Phaser.Math.Distance.Between(firstSprite.x, firstSprite.y, secondSprite.x, secondSprite.y);
+    const minimumDistance = firstAnimal.definition.collisionRadius + secondAnimal.definition.collisionRadius;
+    if (distance >= minimumDistance) return;
+
+    const angle = distance > 0 ? Math.atan2(secondSprite.y - firstSprite.y, secondSprite.x - firstSprite.x) : Math.random() * Math.PI * 2;
+    const push = Math.min(42, (minimumDistance - Math.max(1, distance)) * 2.4);
+    firstSprite.body.velocity.x -= Math.cos(angle) * push;
+    firstSprite.body.velocity.y -= Math.sin(angle) * push;
+    secondSprite.body.velocity.x += Math.cos(angle) * push;
+    secondSprite.body.velocity.y += Math.sin(angle) * push;
+  }
+
+  resolveAnimalCrowding() {
+    for (let firstIndex = 0; firstIndex < this.animals.length; firstIndex += 1) {
+      const firstAnimal = this.animals[firstIndex];
+      if (firstAnimal.dead) continue;
+      for (let secondIndex = firstIndex + 1; secondIndex < this.animals.length; secondIndex += 1) {
+        const secondAnimal = this.animals[secondIndex];
+        if (secondAnimal.dead) continue;
+        this.handleAnimalCollision(firstAnimal.sprite, secondAnimal.sprite);
+      }
+    }
   }
 
   playAnimalAnimation(animal, action) {
@@ -1139,6 +1252,7 @@ class MainScene extends Phaser.Scene {
 
   updateAnimals(time) {
     this.animals.forEach((animal) => {
+      this.updateAnimalNameplate(animal);
       if (animal.dead) {
         return;
       }
@@ -1181,7 +1295,9 @@ class MainScene extends Phaser.Scene {
       const resolvedAction = ANIMAL_DEFS[animal.species].actions[action] ? action : animal.species === 'black_grouse' && sprite.body.speed > 70 ? 'flight' : 'walk';
       this.playAnimalAnimation(animal, resolvedAction);
       sprite.setDepth(5 + sprite.y / WORLD_HEIGHT * 4);
+      this.updateAnimalNameplate(animal);
     });
+    this.resolveAnimalCrowding();
   }
 
   setPlayerHitbox() {
@@ -1702,6 +1818,7 @@ class MainScene extends Phaser.Scene {
     }
 
     animal.health -= amount;
+    this.updateAnimalNameplate(animal);
     animal.hurtUntil = this.time.now + 450;
     animal.sprite.setVelocity(0, 0);
     animal.sprite.setTint(0xff7777);
@@ -1740,8 +1857,9 @@ class MainScene extends Phaser.Scene {
         animal.hurtUntil = 0;
         animal.sprite.setVisible(true);
         animal.sprite.body.enable = true;
-        const spawnPosition = this.getSafeSpawnPosition();
+        const spawnPosition = this.getSafeSpawnPosition(animal.region);
         animal.sprite.setPosition(spawnPosition.x, spawnPosition.y);
+        this.updateAnimalNameplate(animal);
         this.chooseAnimalDirection(animal, this.time.now);
       });
     }
