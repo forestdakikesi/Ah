@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tilemap Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0b1020 0%, #111b2f 100%);
+            color: #eee;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        button, input, select, textarea {
+            font: inherit;
+        }
+
+        input, select, textarea {
+            user-select: text;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #16213e;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 15px;
+        }
+        
+        .toolbar {
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            overflow: hidden;
+        }
+        
+        .map-preview {
+            flex: 1;
+            background: #0f3460;
+            border-radius: 8px;
+            overflow: auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .right-panel {
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .tile-palette {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .spawn-points {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .control-group {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #e94560;
+            font-size: 12px;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #0f3460;
+            color: #eee;
+            font-size: 13px;
+        }
+        
+        button {
+            background: #e94560;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #ff6b6b;
+            transform: translateY(-1px);
+        }
+        
+        .tool-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+        
+        .tool-buttons button {
+            padding: 10px 5px;
+            font-size: 16px;
+        }
+        
+        .category-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .category-tab {
+            padding: 8px 12px;
+            background: #0f3460;
+            border: none;
+            border-radius: 4px;
+            color: #eee;
+            cursor: pointer;
+            font-size: 12px;
+            flex: 1;
+            min-width: 60px;
+        }
+        
+        .category-tab.active {
+            background: #e94560;
+        }
+        
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 3px;
+        }
+        
+        .tile-item {
+            width: 32px;
+            height: 32px;
+            background: #0f3460;
+            border: 2px solid #0f3460;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #aaa;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .tile-item:hover {
+            border-color: #e94560;
+            transform: scale(1.1);
+        }
+        
+        .tile-item.selected {
+            border-color: #e94560;
+            background: #e94560;
+            color: white;
+            box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        
+        .layer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .layer-item:hover {
+            background: #1e3a5f;
+        }
+        
+        .layer-item.active {
+            border: 2px solid #e94560;
+            background: #1e3a5f;
+        }
+        
+        .layer-item .visibility-toggle {
+            cursor: pointer;
+            padding: 4px;
+        }
+        
+        .spawn-point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .spawn-point-item .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-bar {
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .json-editor {
+            width: 100%;
+            height: 100px;
+            background: #0f3460;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 11px;
+        }
+        
+        h2 {
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        h3 {
+            color: #eee;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .zoom-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .zoom-controls button {
+            width: auto;
+            padding: 5px 10px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        
+        .action-buttons button {
+            font-size: 12px;
+            padding: 8px;
+        }
+        
+        .minimap {
+            width: 100%;
+            height: 150px;
+            background: #0f3460;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .minimap canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .coordinates {
+            background: #0f3460;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .responsive-toggle {
+            display: none;
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #e94560, #ff758c);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(233, 69, 96, 0.35);
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: min(88vw, 340px);
+                z-index: 100;
+                transform: translateX(-105%);
+                transition: transform 0.25s ease;
+                box-shadow: 20px 0 40px rgba(0,0,0,0.35);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .responsive-toggle {
+                display: block;
+            }
+            
+            .right-panel {
+                width: 100%;
+                max-height: none;
+            }
+            
+            .tool-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                min-height: 100dvh;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+
+            .toolbar {
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .editor-container {
+                flex-direction: column;
+                min-height: 0;
+            }
+            
+            .right-panel {
+                width: 100%;
+                max-height: 240px;
+            }
+            
+            .zoom-controls {
+                justify-content: center;
+                width: 100%;
+            }
+
+            .map-preview {
+                min-height: 240px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar {
+                padding: 10px 12px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .tile-grid {
+                grid-template-columns: repeat(4, minmax(54px, 1fr));
+            }
+
+            .tile-item {
+                width: 100%;
+                min-height: 56px;
+                height: 56px;
+            }
+        }
+        
+        .color-preview {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-right: 5px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .tile-counter {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .shortcut-hint {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <button class="responsive-toggle" onclick="toggleSidebar()">☰</button>
+    
+    <div class="sidebar" id="sidebar">
+        <h2>🗺️ Advanced Editor</h2>
+        
+        <div class="control-group">
+            <label>Harita Boyutu</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" id="mapWidth" value="64" min="8" max="256" placeholder="Genişlik">
+                <input type="number" id="mapHeight" value="64" min="8" max="256" placeholder="Yükseklik">
+            </div>
+            <button onclick="resizeMap()">📐 Yeniden Boyutlandır</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Araçlar</label>
+            <div class="tool-buttons">
+                <button onclick="setTool('paint')" id="paintTool" title="Boya (B)">🖌️</button>
+                <button onclick="setTool('erase')" id="eraseTool" title="Sil (E)">🧽</button>
+                <button onclick="setTool('fill')" id="fillTool" title="Doldur (F)">🪣</button>
+                <button onclick="setTool('select')" id="selectTool" title="Seç (S)">👆</button>
+                <button onclick="setTool('spawn')" id="spawnTool" title="Spawn (P)">📍</button>
+                <button onclick="setTool('picker')" id="pickerTool" title="Renk Seçici (I)">💉</button>
+                <button onclick="undo()" title="Geri Al (Ctrl+Z)">↩️</button>
+                <button onclick="redo()" title="İleri Al (Ctrl+Y)">↪️</button>
+            </div>
+            <div class="shortcut-hint">Kısayollar: B-Boya, E-Sil, F-Doldur, S-Seç, P-Spawn, I-Renk</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Geçerli Tile</label>
+            <input type="number" id="currentTile" value="1" min="0" max="64">
+            <div id="currentTilePreview" class="tile-item selected">1</div>
+            <div class="tile-counter" id="tileCounter">Tile: 1/64</div>
+        </div>
+        
+        <div class="control-group">
+            <label>İşlemler</label>
+            <div class="action-buttons">
+                <button onclick="clearMap()">🗑️ Temizle</button>
+                <button onclick="clearLayer()">🧹 Katman Temizle</button>
+                <button onclick="exportJSON()">📤 Dışa Aktar</button>
+                <button onclick="importJSON()">📥 İçe Aktar</button>
+                <button onclick="copyToClipboard()">📋 Kopyala</button>
+                <button onclick="loadFromClipboard()">📋 Yükle</button>
+                <button onclick="applyToGame()" style="background: #4CAF50;">🎮 Oyuna Uygula</button>
+                <button onclick="saveToGame()" style="background: #2196F3;">💾 Kaydet</button>
+            </div>
+        </div>
+        
+        <div class="layer-info">
+            <h3>📚 Katmanlar</h3>
+            <div id="layersList"></div>
+            <button onclick="addLayer()">+ Katman Ekle</button>
+        </div>
+        
+        <div class="status-bar" id="statusBar">
+            <span id="statusText">Hazır</span>
+            <span id="coordsText">X: 0, Y: 0</span>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="toolbar">
+            <div class="zoom-controls">
+                <button onclick="zoomIn()">➕</button>
+                <button onclick="zoomOut()">➖</button>
+                <button onclick="resetZoom()">🔄</button>
+                <span id="zoomLevel">100%</span>
+            </div>
+            <div class="coordinates" id="mouseCoords">
+                X: 0, Y: 0
+            </div>
+        </div>
+        
+        <div class="editor-container">
+            <div class="map-preview" id="mapPreview">
+                <canvas id="mapCanvas"></canvas>
+            </div>
+            
+            <div class="right-panel">
+                <div class="minimap">
+                    <h3>🗺️ Minimap</h3>
+                    <canvas id="minimapCanvas"></canvas>
+                </div>
+                
+                <div class="spawn-points">
+                    <h3>📍 Spawn Noktaları</h3>
+                    <div id="spawnPointsList"></div>
+                    <button onclick="addSpawnPoint()">+ Spawn Ekle</button>
+                </div>
+                
+                <div class="tile-palette">
+                    <h3>🎨 Tile Paleti</h3>
+                    <div class="category-tabs" id="categoryTabs"></div>
+                    <div class="tile-grid" id="tilePalette"></div>
+                    <div class="tile-counter" id="paletteCounter">Toplam: 0 tiles</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <label>JSON Verisi</label>
+            <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
+            <button onclick="applyJSON()">JSON'i Uygula</button>
+        </div>
+    </div>
+
+    <script>
+        // Tilemap Editor State
+        let tilemapData = {
+            width: 64,
+            height: 64,
+            tileSize: 32,
+            layers: [
+                {
+                    name: "ground",
+                    data: Array(64 * 64).fill(1),
+                    visible: true,
+                    opacity: 1
+                },
+                {
+                    name: "decoration",
+                    data: Array(64 * 64).fill(0),
+                    visible: true,
+                    opacity: 1
+                }
+            ]
+        };
+        
+        let currentTool = 'paint';
+        let currentLayer = 0;
+        let isDrawing = false;
+        let lastDrawPosition = null;
+        let zoomLevel = 1;
+        const MIN_ZOOM = 0.6;
+        const MAX_ZOOM = 2.4;
+        
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Initialize
+        function init() {
+            // Load from localStorage if available
+            const savedData = localStorage.getItem('tilemapData');
+            if (savedData) {
+                try {
+                    tilemapData = JSON.parse(savedData);
+                    document.getElementById('mapWidth').value = tilemapData.width;
+                    document.getElementById('mapHeight').value = tilemapData.height;
+                    updateStatus('Kaydedilen harita yüklendi');
+                } catch (error) {
+                    console.error('Kaydedilen veri yüklenemedi:', error);
+                }
+            }
+            
+            zoomLevel = 1;
+            setupCanvas();
+            renderTilePalette();
+            renderLayersList();
+            renderMap();
+            updateJSON();
+            setupEventListeners();
+        }
+        
+        function setupCanvas() {
+            const baseWidth = tilemapData.width * tilemapData.tileSize;
+            const baseHeight = tilemapData.height * tilemapData.tileSize;
+            canvas.width = baseWidth;
+            canvas.height = baseHeight;
+            const displayWidth = Math.max(32, Math.round(baseWidth * zoomLevel));
+            const displayHeight = Math.max(32, Math.round(baseHeight * zoomLevel));
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+            canvas.style.imageRendering = 'pixelated';
+            canvas.style.touchAction = 'none';
+            document.getElementById('zoomLevel').textContent = `${Math.round(zoomLevel * 100)}%`;
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(MAX_ZOOM, Number((zoomLevel + 0.1).toFixed(2)));
+            setupCanvas();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(MIN_ZOOM, Number((zoomLevel - 0.1).toFixed(2)));
+            setupCanvas();
+        }
+
+        function resetZoom() {
+            zoomLevel = 1;
+            setupCanvas();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.toggle('open');
+        }
+        
+        function renderTilePalette() {
+            const palette = document.getElementById('tilePalette');
+            palette.innerHTML = '';
+            
+            for (let i = 0; i <= 64; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile-item' + (i === parseInt(document.getElementById('currentTile').value) ? ' selected' : '');
+                tile.textContent = i === 0 ? '' : i;
+                tile.style.background = getTileColor(i);
+                tile.onclick = () => selectTile(i);
+                palette.appendChild(tile);
+            }
+        }
+        
+        function getTileColor(tileId) {
+            const colors = [
+                '#000000', // 0 - empty
+                '#4a7c59', // 1 - grass
+                '#3d6b4f', // 2 - grass variant
+                '#5a8f6a', // 3 - grass variant
+                '#2d5a3d', // 4 - grass variant
+                '#6ba37c', // 5 - grass variant
+                '#4e8549', // 6 - grass variant
+                '#7b9f6d', // 7 - grass variant
+                '#8fbc8f', // 8 - light grass
+                '#7aa87a', // 9 - light grass variant
+                '#9bc49b', // 10 - light grass variant
+                '#6b9e6b', // 11 - light grass variant
+                '#a8d4a8', // 12 - very light grass
+                '#8fc88f', // 13 - very light grass variant
+                '#bce0bc', // 14 - very light grass variant
+                '#7cb87c', // 15 - very light grass variant
+                '#c4eec4', // 16 - extremely light grass
+                '#d4f0d4', // 17 - extremely light grass variant
+                '#e8f8e8', // 18 - extremely light grass variant
+                '#a8d8a8', // 19 - extremely light grass variant
+                '#8b6f47', // 20 - dirt
+                '#7a5f3d', // 21 - dirt variant
+                '#9c7f5f', // 22 - dirt variant
+                '#6b5a3d', // 23 - dirt variant
+                '#b38f6f', // 24 - dirt variant
+                '#8f7f5f', // 25 - dirt variant
+                '#c49f7f', // 26 - dirt variant
+                '#a8a87f', // 27 - dirt variant
+                '#d4b08f', // 28 - light dirt
+                '#c4a87f', // 29 - light dirt variant
+                '#e0c49f', // 30 - light dirt variant
+                '#b49f7f', // 31 - light dirt variant
+                '#f0d8b0', // 32 - very light dirt
+                '#e8d0a8', // 33 - very light dirt variant
+                '#f8e0c0', // 34 - very light dirt variant
+                '#d8c0a0', // 35 - very light dirt variant
+                '#fff8e8', // 36 - extremely light dirt
+                '#fff0d8', // 37 - extremely light dirt variant
+                '#fff8e0', // 38 - extremely light dirt variant
+                '#e8d8c0', // 39 - extremely light dirt variant
+                '#5a7f9f', // 40 - water
+                '#4a6f8f', // 41 - water variant
+                '#6a8faf', // 42 - water variant
+                '#3a5f7f', // 43 - water variant
+                '#7a9fbf', // 44 - water variant
+                '#5a8f9f', // 45 - water variant
+                '#8aafcf', // 46 - water variant
+                '#6a9faf', // 47 - water variant
+                '#9abfdf', // 48 - light water
+                '#8aafc8', // 49 - light water variant
+                '#a8cfdf', // 50 - light water variant
+                '#7a9fb8', // 51 - light water variant
+                '#b8e0f0', // 52 - very light water
+                '#a8d8e8', // 53 - very light water variant
+                '#c8e8f8', // 54 - very light water variant
+                '#98c8e0', // 55 - very light water variant
+                '#d8f0f8', // 56 - extremely light water
+                '#e8f8fc', // 57 - extremely light water variant
+                '#f0fcff', // 58 - extremely light water variant
+                '#c8e8f0', // 59 - extremely light water variant
+                '#7f7f7f', // 60 - stone
+                '#6f6f6f', // 61 - stone variant
+                '#8f8f8f', // 62 - stone variant
+                '#5f5f5f', // 63 - stone variant
+                '#9f9f9f', // 64 - stone variant
+            ];
+            
+            return colors[tileId] || colors[0];
+        }
+        
+        function selectTile(tileId) {
+            document.getElementById('currentTile').value = tileId;
+            document.getElementById('currentTilePreview').textContent = tileId === 0 ? '' : tileId;
+            document.getElementById('currentTilePreview').style.background = getTileColor(tileId);
+            renderTilePalette();
+        }
+        
+        function renderLayersList() {
+            const layersList = document.getElementById('layersList');
+            layersList.innerHTML = '';
+            
+            tilemapData.layers.forEach((layer, index) => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item' + (index === currentLayer ? ' active' : '');
+                layerItem.innerHTML = `
+                    <span>
+                        <input type="checkbox" ${layer.visible ? 'checked' : ''} onchange="toggleLayerVisibility(${index})">
+                        ${layer.name}
+                    </span>
+                    <button onclick="removeLayer(${index})" style="width: auto; padding: 2px 8px;">×</button>
+                `;
+                layerItem.onclick = (e) => {
+                    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                        selectLayer(index);
+                    }
+                };
+                layersList.appendChild(layerItem);
+            });
+        }
+        
+        function selectLayer(index) {
+            currentLayer = index;
+            renderLayersList();
+            renderMap();
+            updateStatus(`Katman: ${tilemapData.layers[index].name}`);
+        }
+        
+        function toggleLayerVisibility(index) {
+            tilemapData.layers[index].visible = !tilemapData.layers[index].visible;
+            renderMap();
+        }
+        
+        function addLayer() {
+            const name = prompt('Katman adı:', `layer_${tilemapData.layers.length}`);
+            if (name) {
+                tilemapData.layers.push({
+                    name: name,
+                    data: Array(tilemapData.width * tilemapData.height).fill(0),
+                    visible: true,
+                    opacity: 1
+                });
+                renderLayersList();
+                updateJSON();
+            }
+        }
+        
+        function removeLayer(index) {
+            if (tilemapData.layers.length > 1) {
+                tilemapData.layers.splice(index, 1);
+                if (currentLayer >= tilemapData.layers.length) {
+                    currentLayer = tilemapData.layers.length - 1;
+                }
+                renderLayersList();
+                renderMap();
+                updateJSON();
+            }
+        }
+        
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-buttons button').forEach(btn => {
+                btn.style.background = '#e94560';
+            });
+            document.getElementById(tool + 'Tool').style.background = '#ff6b6b';
+            updateStatus(`Araç: ${tool}`);
+        }
+        
+        function resizeMap() {
+            const newWidth = parseInt(document.getElementById('mapWidth').value);
+            const newHeight = parseInt(document.getElementById('mapHeight').value);
+            
+            tilemapData.layers.forEach(layer => {
+                const newData = Array(newWidth * newHeight).fill(0);
+                
+                for (let y = 0; y < Math.min(tilemapData.height, newHeight); y++) {
+                    for (let x = 0; x < Math.min(tilemapData.width, newWidth); x++) {
+                        const oldIndex = y * tilemapData.width + x;
+                        const newIndex = y * newWidth + x;
+                        newData[newIndex] = layer.data[oldIndex];
+                    }
+                }
+                
+                layer.data = newData;
+            });
+            
+            tilemapData.width = newWidth;
+            tilemapData.height = newHeight;
+            
+            setupCanvas();
+            renderMap();
+            updateJSON();
+            updateStatus(`Harita boyutu: ${newWidth}x${newHeight}`);
+        }
+        
+        function clearMap() {
+            if (confirm('Tüm harita temizlensin mi?')) {
+                tilemapData.layers[currentLayer].data = Array(tilemapData.width * tilemapData.height).fill(0);
+                renderMap();
+                updateJSON();
+                updateStatus('Harita temizlendi');
+            }
+        }
+        
+        function renderMap() {
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Render each layer
+            tilemapData.layers.forEach((layer, layerIndex) => {
+                if (!layer.visible) return;
+                
+                for (let y = 0; y < tilemapData.height; y++) {
+                    for (let x = 0; x < tilemapData.width; x++) {
+                        const index = y * tilemapData.width + x;
+                        const tileId = layer.data[index];
+                        
+                        if (tileId > 0) {
+                            ctx.fillStyle = getTileColor(tileId);
+                            ctx.fillRect(
+                                x * tilemapData.tileSize,
+                                y * tilemapData.tileSize,
+                                tilemapData.tileSize,
+                                tilemapData.tileSize
+                            );
+                            
+                            // Add tile number
+                            ctx.fillStyle = tileId > 32 ? '#000' : '#fff';
+                            ctx.font = '10px Arial';
+                            ctx.fillText(
+                                tileId,
+                                x * tilemapData.tileSize + 4,
+                                y * tilemapData.tileSize + 12
+                            );
+                        }
+                    }
+                }
+            });
+            
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let x = 0; x <= tilemapData.width; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * tilemapData.tileSize, 0);
+                ctx.lineTo(x * tilemapData.tileSize, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y <= tilemapData.height; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * tilemapData.tileSize);
+                ctx.lineTo(canvas.width, y * tilemapData.tileSize);
+                ctx.stroke();
+            }
+        }
+        
+        function getTileAtPosition(x, y) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            const canvasX = (x - rect.left) * scaleX;
+            const canvasY = (y - rect.top) * scaleY;
+            
+            const tileX = Math.floor(canvasX / tilemapData.tileSize);
+            const tileY = Math.floor(canvasY / tilemapData.tileSize);
+            
+            if (tileX >= 0 && tileX < tilemapData.width && tileY >= 0 && tileY < tilemapData.height) {
+                return { x: tileX, y: tileY };
+            }
+            return null;
+        }
+        
+        function paintTile(tileX, tileY) {
+            const index = tileY * tilemapData.width + tileX;
+            const currentTileValue = parseInt(document.getElementById('currentTile').value);
+            
+            if (currentTool === 'paint') {
+                tilemapData.layers[currentLayer].data[index] = currentTileValue;
+            } else if (currentTool === 'erase') {
+                tilemapData.layers[currentLayer].data[index] = 0;
+            }
+            
+            renderMap();
+            updateJSON();
+        }
+        
+        function fillTile(startX, startY) {
+            const currentTileValue = parseInt(document.getElementById('currentTile').value);
+            const layer = tilemapData.layers[currentLayer];
+            const startIndex = startY * tilemapData.width + startX;
+            const targetTile = layer.data[startIndex];
+            
+            if (targetTile === currentTileValue) return;
+            
+            const stack = [[startX, startY]];
+            const visited = new Set();
+            
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+                
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= tilemapData.width || y < 0 || y >= tilemapData.height) continue;
+                
+                const index = y * tilemapData.width + x;
+                if (layer.data[index] !== targetTile) continue;
+                
+                visited.add(key);
+                layer.data[index] = currentTileValue;
+                
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+            
+            renderMap();
+            updateJSON();
+        }
+        
+        function setupEventListeners() {
+            canvas.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                isDrawing = true;
+                canvas.setPointerCapture?.(e.pointerId);
+                const pos = getTileAtPosition(e.clientX, e.clientY);
+                if (pos) {
+                    if (currentTool === 'fill') {
+                        fillTile(pos.x, pos.y);
+                    } else {
+                        paintTile(pos.x, pos.y);
+                    }
+                    lastDrawPosition = pos;
+                }
+            });
+            
+            canvas.addEventListener('pointermove', (e) => {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getTileAtPosition(e.clientX, e.clientY);
+                if (pos && (pos.x !== lastDrawPosition?.x || pos.y !== lastDrawPosition?.y)) {
+                    if (currentTool !== 'fill') {
+                        paintTile(pos.x, pos.y);
+                    }
+                    lastDrawPosition = pos;
+                }
+            });
+            
+            canvas.addEventListener('pointerup', () => {
+                isDrawing = false;
+                lastDrawPosition = null;
+            });
+            
+            canvas.addEventListener('pointercancel', () => {
+                isDrawing = false;
+                lastDrawPosition = null;
+            });
+            
+            canvas.addEventListener('pointerleave', () => {
+                isDrawing = false;
+                lastDrawPosition = null;
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        zoomIn();
+                    } else {
+                        zoomOut();
+                    }
+                }
+            }, { passive: false });
+            
+            document.getElementById('currentTile').addEventListener('change', (e) => {
+                selectTile(parseInt(e.target.value));
+            });
+
+            document.querySelector('.map-preview').addEventListener('touchmove', (e) => {
+                if (e.target === canvas) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+        
+        function updateJSON() {
+            document.getElementById('jsonEditor').value = JSON.stringify(tilemapData, null, 2);
+            // Auto-save to localStorage
+            localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+        }
+        
+        function applyJSON() {
+            try {
+                const newData = JSON.parse(document.getElementById('jsonEditor').value);
+                tilemapData = newData;
+                setupCanvas();
+                renderLayersList();
+                renderMap();
+                updateStatus('JSON uygulandı');
+            } catch (error) {
+                updateStatus('JSON hatası: ' + error.message);
+            }
+        }
+        
+        function applyToGame() {
+            localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+
+            if (window.opener) {
+                window.opener.postMessage({
+                    type: 'tilemapUpdate',
+                    tilemapData: tilemapData
+                }, '*');
+                window.opener.focus();
+                updateStatus('Tilemap verileri oyuna gönderildi!');
+                return;
+            }
+
+            const existingGame = window.open('http://127.0.0.1:4173', 'GamePreview');
+            if (existingGame) {
+                existingGame.focus();
+                updateStatus('Oyun önizleme penceresi açıldı!');
+                return;
+            }
+
+            updateStatus('Oyun penceresi bulunamadı, veriler yerel olarak kaydedildi.');
+        }
+        
+        function saveToGame() {
+            // Save tilemap data to a file for the game to load
+            const dataStr = JSON.stringify(tilemapData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tilemap-data.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            updateStatus('Tilemap verileri dosyaya kaydedildi - public/assets/tilemap-data.json olarak kopyalayın');
+        }
+        
+        function exportJSON() {
+            const dataStr = JSON.stringify(tilemapData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tilemap.json';
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            updateStatus('JSON dışa aktarıldı');
+        }
+        
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (event) => {
+                    try {
+                        tilemapData = JSON.parse(event.target.result);
+                        setupCanvas();
+                        renderLayersList();
+                        renderMap();
+                        updateJSON();
+                        updateStatus('JSON içe aktarıldı');
+                    } catch (error) {
+                        updateStatus('JSON içe aktarma hatası: ' + error.message);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function copyToClipboard() {
+            navigator.clipboard.writeText(JSON.stringify(tilemapData, null, 2));
+            updateStatus('JSON panoya kopyalandı');
+        }
+        
+        function loadFromClipboard() {
+            navigator.clipboard.readText().then(text => {
+                try {
+                    tilemapData = JSON.parse(text);
+                    setupCanvas();
+                    renderLayersList();
+                    renderMap();
+                    updateJSON();
+                    updateStatus('JSON panodan yüklendi');
+                } catch (error) {
+                    updateStatus('Panodan yükleme hatası: ' + error.message);
+                }
+            });
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('statusBar').textContent = message;
+        }
+        
+        // Initialize on load
+        window.onload = init;
+    </script>
+</body>
+</html>

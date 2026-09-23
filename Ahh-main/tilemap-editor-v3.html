@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Tilemap Editor v3 - Real Assets</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 360px;
+            background: #16213e;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 12px;
+        }
+        
+        .toolbar {
+            background: #16213e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            overflow: hidden;
+        }
+        
+        .map-preview {
+            flex: 1;
+            background: #0f3460;
+            border-radius: 8px;
+            overflow: auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .right-panel {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .tile-palette, .spawn-points, .minimap {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .minimap { height: 180px; }
+        .spawn-points { max-height: 180px; }
+        .tile-palette { flex: 1; }
+        
+        .control-group { margin-bottom: 8px; }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #e94560;
+            font-size: 11px;
+        }
+        
+        input, select, button {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 4px;
+            border: none;
+            border-radius: 4px;
+            background: #0f3460;
+            color: #eee;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #e94560;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        button:hover { background: #ff6b6b; transform: translateY(-1px); }
+        
+        .tool-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+        
+        .tool-buttons button {
+            padding: 8px 4px;
+            font-size: 14px;
+        }
+        
+        .category-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .category-tab {
+            padding: 6px 10px;
+            background: #0f3460;
+            border: none;
+            border-radius: 4px;
+            color: #eee;
+            cursor: pointer;
+            font-size: 11px;
+            flex: 1;
+            min-width: 55px;
+        }
+        
+        .category-tab.active { background: #e94560; }
+        
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+        
+        .tile-item {
+            width: 64px;
+            height: 64px;
+            background: #0f3460;
+            border: 2px solid #0f3460;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #aaa;
+            border-radius: 4px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tile-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        
+        .tile-item .tile-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 8px;
+            padding: 2px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .tile-item:hover { border-color: #e94560; transform: scale(1.05); }
+        
+        .tile-item.selected {
+            border-color: #e94560;
+            background: #e94560;
+            box-shadow: 0 0 8px rgba(233, 69, 96, 0.5);
+        }
+        
+        .layer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px;
+            margin-bottom: 4px;
+            background: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        
+        .layer-item:hover { background: #1e3a5f; }
+        .layer-item.active { border: 2px solid #e94560; background: #1e3a5f; }
+        
+        .spawn-point-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px;
+            margin-bottom: 4px;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .spawn-point-item .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .status-bar {
+            background: #0f3460;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .json-editor {
+            width: 100%;
+            height: 80px;
+            background: #0f3460;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 10px;
+        }
+        
+        h2 { color: #e94560; margin-bottom: 8px; font-size: 18px; }
+        h3 { color: #eee; margin-bottom: 8px; font-size: 13px; }
+        
+        .zoom-controls { display: flex; gap: 4px; align-items: center; }
+        .zoom-controls button { width: auto; padding: 4px 8px; }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        
+        .action-buttons button { font-size: 11px; padding: 6px; }
+        
+        .coordinates {
+            background: #0f3460;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .shortcut-hint { font-size: 9px; color: #888; margin-top: 2px; }
+        .tile-counter { font-size: 9px; color: #888; margin-top: 4px; }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🗺️ Advanced Editor v3</h2>
+        
+        <div class="control-group">
+            <label>Harita Boyutu</label>
+            <div style="display: flex; gap: 4px;">
+                <input type="number" id="mapWidth" value="64" min="8" max="256" placeholder="Genişlik">
+                <input type="number" id="mapHeight" value="64" min="8" max="256" placeholder="Yükseklik">
+            </div>
+            <button onclick="resizeMap()">📐 Yeniden Boyutlandır</button>
+        </div>
+        
+        <div class="control-group">
+            <label>Araçlar</label>
+            <div class="tool-buttons">
+                <button onclick="setTool('paint')" id="paintTool" title="Boya (B)">🖌️</button>
+                <button onclick="setTool('erase')" id="eraseTool" title="Sil (E)">🧽</button>
+                <button onclick="setTool('fill')" id="fillTool" title="Doldur (F)">🪣</button>
+                <button onclick="setTool('select')" id="selectTool" title="Seç (S)">👆</button>
+                <button onclick="setTool('spawn')" id="spawnTool" title="Spawn (P)">📍</button>
+                <button onclick="setTool('picker')" id="pickerTool" title="Renk Seçici (I)">💉</button>
+                <button onclick="undo()" title="Geri Al (Ctrl+Z)">↩️</button>
+                <button onclick="setTool('pan')" id="panTool" title="Kaydır (Space)">✋</button>
+            </div>
+            <div class="shortcut-hint">B-Boya, E-Sil, F-Doldur, S-Seç, P-Spawn, I-Renk, Space-Kaydır</div>
+        </div>
+        
+        <div class="control-group">
+            <label>Geçerli Tile</label>
+            <input type="number" id="currentTile" value="1" min="0" max="140">
+            <div id="currentTilePreview" class="tile-item selected">1</div>
+            <div class="tile-counter" id="tileCounter">Tile: 1</div>
+        </div>
+        
+        <div class="control-group">
+            <label>İşlemler</label>
+            <div class="action-buttons">
+                <button onclick="clearMap()">🗑️ Temizle</button>
+                <button onclick="clearLayer()">🧹 Katman Temizle</button>
+                <button onclick="exportJSON()">📤 Dışa Aktar</button>
+                <button onclick="importJSON()">📥 İçe Aktar</button>
+                <button onclick="copyToClipboard()">📋 Kopyala</button>
+                <button onclick="loadFromClipboard()">📋 Yükle</button>
+                <button onclick="applyToGame()" style="background: #4CAF50;">🎮 Oyuna Uygula</button>
+                <button onclick="saveToGame()" style="background: #2196F3;">💾 Kaydet</button>
+            </div>
+        </div>
+        
+        <div class="layer-info">
+            <h3>📚 Katmanlar</h3>
+            <div id="layersList"></div>
+            <button onclick="addLayer()">+ Katman Ekle</button>
+        </div>
+        
+        <div class="status-bar" id="statusBar">
+            <span id="statusText">Hazır</span>
+            <span id="coordsText">X: 0, Y: 0</span>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="toolbar">
+            <div class="zoom-controls">
+                <button onclick="zoomIn()">➕</button>
+                <button onclick="zoomOut()">➖</button>
+                <button onclick="resetZoom()">🔄</button>
+                <span id="zoomLevel">100%</span>
+            </div>
+            <div class="coordinates" id="mouseCoords">X: 0, Y: 0</div>
+        </div>
+        
+        <div class="editor-container">
+            <div class="map-preview" id="mapPreview">
+                <canvas id="mapCanvas"></canvas>
+            </div>
+            
+            <div class="right-panel">
+                <div class="minimap">
+                    <h3>🗺️ Minimap</h3>
+                    <canvas id="minimapCanvas"></canvas>
+                </div>
+                
+                <div class="spawn-points">
+                    <h3>📍 Spawn Noktaları</h3>
+                    <div id="spawnPointsList"></div>
+                    <button onclick="addSpawnPoint()">+ Spawn Ekle</button>
+                </div>
+                
+                <div class="tile-palette">
+                    <h3>🎨 Tile Paleti</h3>
+                    <div class="category-tabs" id="categoryTabs"></div>
+                    <div id="tilePalette" class="tile-grid"></div>
+                    <div class="tile-counter" id="paletteCounter">Toplam: 0 tiles</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <label>JSON Verisi</label>
+            <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
+            <button onclick="applyJSON()">JSON'i Uygula</button>
+        </div>
+    </div>
+
+    <script>
+        let tilemapData = {
+            width: 64,
+            height: 64,
+            tileSize: 32,
+            layers: [
+                { name: "ground", data: Array(64 * 64).fill(1), visible: true, opacity: 1 },
+                { name: "beach", data: Array(64 * 64).fill(0), visible: true, opacity: 1 },
+                { name: "water", data: Array(64 * 64).fill(0), visible: true, opacity: 1 },
+                { name: "decoration", data: Array(64 * 64).fill(0), visible: true, opacity: 1 }
+            ],
+            spawnPoints: [ { name: "player", x: 32, y: 32, color: "#e94560" } ]
+        };
+        
+        let currentTool = 'paint', currentLayer = 0, currentCategory = 'fields';
+        let isDrawing = false, lastDrawPosition = null, zoomLevel = 1;
+        let undoStack = [], redoStack = [];
+        let assetImages = {};
+        let tilesetImage = null;
+        
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapCtx = minimapCanvas.getContext('2d');
+        
+        // Asset paths - gerçek assettile dosyaları
+        const assetPaths = {
+            tiles: 'assets/tiles/',
+            objects: 'assets/objects/',
+            animated: 'assets/animated_objects/'
+        };
+        
+        const tileCategories = {
+            fields: {
+                name: "🌿 Zemin Tiles",
+                description: "Zemin ve arazi tiles",
+                tiles: Array.from({length: 64}, (_, i) => ({ 
+                    id: i + 1, 
+                    name: `Zemin_${i + 1}`, 
+                    path: `${assetPaths.tiles}FieldsTile_${String(i + 1).padStart(2, '0')}.png`,
+                    type: 'image'
+                }))
+            },
+            tileset: {
+                name: "🗺️ Tileset",
+                description: "Tileset paketi",
+                tiles: Array.from({length: 64}, (_, i) => ({ 
+                    id: i + 65, 
+                    name: `Tileset_${i + 1}`, 
+                    path: `${assetPaths.tiles}FieldsTileset.png`,
+                    frame: i,
+                    type: 'tileset'
+                }))
+            },
+            decor: {
+                name: "🎨 Dekorasyon",
+                description: "Genel dekorasyon objeleri",
+                tiles: Array.from({length: 17}, (_, i) => ({ 
+                    id: 129 + i, 
+                    name: `Decor_${i + 1}`, 
+                    path: `${assetPaths.objects}3 Decor/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            grass: {
+                name: "🌱 Çim",
+                description: "Çim ve bitki objeleri",
+                tiles: Array.from({length: 6}, (_, i) => ({ 
+                    id: 146 + i, 
+                    name: `Grass_${i + 1}`, 
+                    path: `${assetPaths.objects}5 Grass/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            stone: {
+                name: "🪨 Taş",
+                description: "Taş ve kaya objeleri",
+                tiles: Array.from({length: 6}, (_, i) => ({ 
+                    id: 152 + i, 
+                    name: `Stone_${i + 1}`, 
+                    path: `${assetPaths.objects}2 Stone/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            box: {
+                name: "📦 Kutu",
+                description: "Kutu ve sandık objeleri",
+                tiles: Array.from({length: 5}, (_, i) => ({ 
+                    id: 158 + i, 
+                    name: `Box_${i + 1}`, 
+                    path: `${assetPaths.objects}4 Box/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            shadow: {
+                name: "🌑 Gölge",
+                description: "Gölge objeleri",
+                tiles: Array.from({length: 6}, (_, i) => ({ 
+                    id: 163 + i, 
+                    name: `Shadow_${i + 1}`, 
+                    path: `${assetPaths.objects}1 Shadow/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            tent: {
+                name: "⛺ Çadır",
+                description: "Çadır objeleri",
+                tiles: Array.from({length: 4}, (_, i) => ({ 
+                    id: 169 + i, 
+                    name: `Tent_${i + 1}`, 
+                    path: `${assetPaths.objects}6 Tent/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            house: {
+                name: "🏠 Ev",
+                description: "Ev ve bina objeleri",
+                tiles: Array.from({length: 4}, (_, i) => ({ 
+                    id: 173 + i, 
+                    name: `House_${i + 1}`, 
+                    path: `${assetPaths.objects}7 House/${i + 1}.png`,
+                    type: 'image'
+                }))
+            },
+            animated: {
+                name: "🎬 Animasyonlu",
+                description: "Animasyonlu objeler",
+                tiles: [
+                    { id: 177, name: "Door1", path: `${assetPaths.animated}Door1.png`, type: 'image' },
+                    { id: 178, name: "Door2", path: `${assetPaths.animated}Door2.png`, type: 'image' },
+                    { id: 179, name: "DoubleDoor1", path: `${assetPaths.animated}DoubleDoor1.png`, type: 'image' },
+                    { id: 180, name: "DoubleDoor2", path: `${assetPaths.animated}DoubleDoor2.png`, type: 'image' }
+                ]
+            }
+        };
+        
+        async function loadAssets() {
+            updateStatus('Assetler yükleniyor...');
+            
+            // Load tileset
+            try {
+                tilesetImage = await loadImage(`${assetPaths.tiles}FieldsTileset.png`);
+            } catch (e) {
+                console.error('Tileset yüklenemedi:', e);
+            }
+            
+            // Load individual tile images
+            for (const category of Object.values(tileCategories)) {
+                for (const tile of category.tiles) {
+                    if (tile.type === 'image') {
+                        try {
+                            const img = await loadImage(tile.path);
+                            assetImages[tile.id] = img;
+                        } catch (e) {
+                            console.error(`Tile yüklenemedi: ${tile.path}`, e);
+                            // Create fallback placeholder
+                            assetImages[tile.id] = createPlaceholder(tile.id);
+                        }
+                    }
+                }
+            }
+            
+            updateStatus('Assetler yüklendi!');
+            renderTilePalette();
+        }
+        
+        function loadImage(path) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = path;
+            });
+        }
+        
+        function createPlaceholder(id) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#888';
+            ctx.fillRect(0, 0, 32, 32);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(id, 16, 18);
+            return canvas;
+        }
+        
+        function init() {
+            loadFromLocalStorage();
+            setupCanvas();
+            setupMinimap();
+            renderCategoryTabs();
+            loadAssets().then(() => {
+                renderTilePalette();
+                renderLayersList();
+                renderSpawnPoints();
+                renderMap();
+                updateJSON();
+                setupEventListeners();
+                setupKeyboardShortcuts();
+            });
+        }
+        
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('tilemapData');
+            if (savedData) {
+                try {
+                    tilemapData = JSON.parse(savedData);
+                    document.getElementById('mapWidth').value = tilemapData.width;
+                    document.getElementById('mapHeight').value = tilemapData.height;
+                    updateStatus('Kaydedilen harita yüklendi');
+                } catch (e) { console.error('Yükleme hatası:', e); }
+            }
+        }
+        
+        function setupCanvas() {
+            canvas.width = tilemapData.width * tilemapData.tileSize;
+            canvas.height = tilemapData.height * tilemapData.tileSize;
+        }
+        
+        function setupMinimap() {
+            minimapCanvas.width = 200;
+            minimapCanvas.height = 200;
+        }
+        
+        function renderCategoryTabs() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = '';
+            Object.keys(tileCategories).forEach(category => {
+                const tab = document.createElement('button');
+                tab.className = 'category-tab' + (category === currentCategory ? ' active' : '');
+                tab.textContent = tileCategories[category].name;
+                tab.title = tileCategories[category].description;
+                tab.onclick = () => selectCategory(category);
+                tabsContainer.appendChild(tab);
+            });
+        }
+        
+        function selectCategory(category) {
+            currentCategory = category;
+            renderCategoryTabs();
+            renderTilePalette();
+        }
+        
+        function renderTilePalette() {
+            const palette = document.getElementById('tilePalette');
+            palette.innerHTML = '';
+            const category = tileCategories[currentCategory];
+            
+            category.tiles.forEach(tile => {
+                const tileItem = document.createElement('div');
+                tileItem.className = 'tile-item' + (tile.id === parseInt(document.getElementById('currentTile').value) ? ' selected' : '');
+                
+                if (tile.type === 'image' && assetImages[tile.id]) {
+                    const img = document.createElement('img');
+                    img.src = assetImages[tile.id].src || tile.path;
+                    tileItem.appendChild(img);
+                } else if (tile.type === 'tileset' && tilesetImage) {
+                    const img = document.createElement('img');
+                    img.src = tile.path;
+                    tileItem.appendChild(img);
+                } else {
+                    tileItem.textContent = tile.id;
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'tile-name';
+                nameSpan.textContent = tile.name;
+                tileItem.appendChild(nameSpan);
+                
+                tileItem.title = tile.name;
+                tileItem.onclick = () => selectTile(tile.id);
+                palette.appendChild(tileItem);
+            });
+            
+            document.getElementById('paletteCounter').textContent = `Toplam: ${category.tiles.length} tiles`;
+        }
+        
+        function selectTile(tileId) {
+            document.getElementById('currentTile').value = tileId;
+            const preview = document.getElementById('currentTilePreview');
+            preview.innerHTML = '';
+            
+            if (assetImages[tileId]) {
+                const img = document.createElement('img');
+                img.src = assetImages[tileId].src;
+                preview.appendChild(img);
+            } else {
+                preview.textContent = tileId;
+            }
+            
+            document.getElementById('tileCounter').textContent = `Tile: ${tileId}`;
+            renderTilePalette();
+        }
+        
+        function renderLayersList() {
+            const layersList = document.getElementById('layersList');
+            layersList.innerHTML = '';
+            tilemapData.layers.forEach((layer, index) => {
+                const layerItem = document.createElement('div');
+                layerItem.className = 'layer-item' + (index === currentLayer ? ' active' : '');
+                layerItem.innerHTML = `
+                    <span>
+                        <span class="visibility-toggle" onclick="toggleLayerVisibility(${index}, event)">
+                            ${layer.visible ? '👁️' : '👁️‍🗨️'}
+                        </span>
+                        ${layer.name}
+                    </span>
+                    <button onclick="removeLayer(${index})" style="width: auto; padding: 2px 6px;">×</button>
+                `;
+                layerItem.onclick = (e) => {
+                    if (e.target.tagName !== 'SPAN' && e.target.tagName !== 'BUTTON') selectLayer(index);
+                };
+                layersList.appendChild(layerItem);
+            });
+        }
+        
+        function selectLayer(index) {
+            currentLayer = index;
+            renderLayersList();
+            renderMap();
+            updateStatus(`Katman: ${tilemapData.layers[index].name}`);
+        }
+        
+        function toggleLayerVisibility(index, event) {
+            event.stopPropagation();
+            tilemapData.layers[index].visible = !tilemapData.layers[index].visible;
+            renderLayersList();
+            renderMap();
+        }
+        
+        function addLayer() {
+            const name = prompt('Katman adı:', `layer_${tilemapData.layers.length}`);
+            if (name) {
+                saveState();
+                tilemapData.layers.push({
+                    name: name,
+                    data: Array(tilemapData.width * tilemapData.height).fill(0),
+                    visible: true,
+                    opacity: 1
+                });
+                renderLayersList();
+                updateJSON();
+            }
+        }
+        
+        function removeLayer(index) {
+            if (tilemapData.layers.length > 1) {
+                saveState();
+                tilemapData.layers.splice(index, 1);
+                if (currentLayer >= tilemapData.layers.length) currentLayer = tilemapData.layers.length - 1;
+                renderLayersList();
+                renderMap();
+                updateJSON();
+            }
+        }
+        
+        function clearLayer() {
+            if (confirm('Bu katman temizlensin mi?')) {
+                saveState();
+                tilemapData.layers[currentLayer].data = Array(tilemapData.width * tilemapData.height).fill(0);
+                renderMap();
+                updateJSON();
+                updateStatus('Katman temizlendi');
+            }
+        }
+        
+        function renderSpawnPoints() {
+            const spawnList = document.getElementById('spawnPointsList');
+            spawnList.innerHTML = '';
+            tilemapData.spawnPoints.forEach((spawn, index) => {
+                const spawnItem = document.createElement('div');
+                spawnItem.className = 'spawn-point-item';
+                spawnItem.innerHTML = `
+                    <div class="color-dot" style="background: ${spawn.color}"></div>
+                    <span>${spawn.name} (${spawn.x}, ${spawn.y})</span>
+                    <button onclick="removeSpawnPoint(${index})" style="width: auto; padding: 2px 6px;">×</button>
+                `;
+                spawnList.appendChild(spawnItem);
+            });
+        }
+        
+        function addSpawnPoint() {
+            const name = prompt('Spawn noktası adı:', `spawn_${tilemapData.spawnPoints.length}`);
+            if (name) {
+                const x = Math.floor(tilemapData.width / 2);
+                const y = Math.floor(tilemapData.height / 2);
+                const colors = ['#e94560', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c'];
+                tilemapData.spawnPoints.push({
+                    name: name,
+                    x: x,
+                    y: y,
+                    color: colors[tilemapData.spawnPoints.length % colors.length]
+                });
+                renderSpawnPoints();
+                updateJSON();
+            }
+        }
+        
+        function removeSpawnPoint(index) {
+            tilemapData.spawnPoints.splice(index, 1);
+            renderSpawnPoints();
+            updateJSON();
+        }
+        
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-buttons button').forEach(btn => btn.style.background = '#e94560');
+            document.getElementById(tool + 'Tool').style.background = '#ff6b6b';
+            updateStatus(`Araç: ${tool}`);
+        }
+        
+        function saveState() {
+            undoStack.push(JSON.stringify(tilemapData));
+            if (undoStack.length > 50) undoStack.shift();
+            redoStack = [];
+        }
+        
+        function undo() {
+            if (undoStack.length > 0) {
+                redoStack.push(JSON.stringify(tilemapData));
+                tilemapData = JSON.parse(undoStack.pop());
+                setupCanvas();
+                renderLayersList();
+                renderMap();
+                updateJSON();
+                updateStatus('Geri alındı');
+            }
+        }
+        
+        function redo() {
+            if (redoStack.length > 0) {
+                undoStack.push(JSON.stringify(tilemapData));
+                tilemapData = JSON.parse(redoStack.pop());
+                setupCanvas();
+                renderLayersList();
+                renderMap();
+                updateJSON();
+                updateStatus('İleri alındı');
+            }
+        }
+        
+        function resizeMap() {
+            const newWidth = parseInt(document.getElementById('mapWidth').value);
+            const newHeight = parseInt(document.getElementById('mapHeight').value);
+            saveState();
+            tilemapData.layers.forEach(layer => {
+                const newData = Array(newWidth * newHeight).fill(0);
+                for (let y = 0; y < Math.min(tilemapData.height, newHeight); y++) {
+                    for (let x = 0; x < Math.min(tilemapData.width, newWidth); x++) {
+                        const oldIndex = y * tilemapData.width + x;
+                        const newIndex = y * newWidth + x;
+                        newData[newIndex] = layer.data[oldIndex];
+                    }
+                }
+                layer.data = newData;
+            });
+            tilemapData.width = newWidth;
+            tilemapData.height = newHeight;
+            setupCanvas();
+            renderMap();
+            updateJSON();
+            updateStatus(`Harita boyutu: ${newWidth}x${newHeight}`);
+        }
+        
+        function clearMap() {
+            if (confirm('Tüm harita temizlensin mi?')) {
+                saveState();
+                tilemapData.layers.forEach(layer => {
+                    layer.data = Array(tilemapData.width * tilemapData.height).fill(0);
+                });
+                renderMap();
+                updateJSON();
+                updateStatus('Harita temizlendi');
+            }
+        }
+        
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + 0.25, 3);
+            applyZoom();
+        }
+        
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+            applyZoom();
+        }
+        
+        function resetZoom() {
+            zoomLevel = 1;
+            applyZoom();
+        }
+        
+        function applyZoom() {
+            canvas.style.transform = `scale(${zoomLevel})`;
+            canvas.style.transformOrigin = 'center center';
+            document.getElementById('zoomLevel').textContent = `${Math.round(zoomLevel * 100)}%`;
+        }
+        
+        function renderMap() {
+            ctx.fillStyle = '#0f3460';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            tilemapData.layers.forEach((layer, layerIndex) => {
+                if (!layer.visible) return;
+                for (let y = 0; y < tilemapData.height; y++) {
+                    for (let x = 0; x < tilemapData.width; x++) {
+                        const index = y * tilemapData.width + x;
+                        const tileId = layer.data[index];
+                        if (tileId > 0) {
+                            // Try to render actual image
+                            if (assetImages[tileId]) {
+                                ctx.drawImage(
+                                    assetImages[tileId],
+                                    x * tilemapData.tileSize,
+                                    y * tilemapData.tileSize,
+                                    tilemapData.tileSize,
+                                    tilemapData.tileSize
+                                );
+                            } else {
+                                // Fallback to colored rectangle
+                                ctx.fillStyle = getTileColor(tileId);
+                                ctx.fillRect(x * tilemapData.tileSize, y * tilemapData.tileSize, tilemapData.tileSize, tilemapData.tileSize);
+                                ctx.fillStyle = '#fff';
+                                ctx.font = '8px Arial';
+                                ctx.fillText(tileId, x * tilemapData.tileSize + 2, y * tilemapData.tileSize + 10);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            tilemapData.spawnPoints.forEach(spawn => {
+                ctx.fillStyle = spawn.color;
+                ctx.beginPath();
+                ctx.arc(spawn.x * tilemapData.tileSize + tilemapData.tileSize / 2, spawn.y * tilemapData.tileSize + tilemapData.tileSize / 2, tilemapData.tileSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(spawn.name.substring(0, 3), spawn.x * tilemapData.tileSize + tilemapData.tileSize / 2, spawn.y * tilemapData.tileSize + tilemapData.tileSize / 2 + 3);
+            });
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= tilemapData.width; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * tilemapData.tileSize, 0);
+                ctx.lineTo(x * tilemapData.tileSize, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= tilemapData.height; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * tilemapData.tileSize);
+                ctx.lineTo(canvas.width, y * tilemapData.tileSize);
+                ctx.stroke();
+            }
+            
+            renderMinimap();
+        }
+        
+        function getTileColor(tileId) {
+            const colors = [
+                '#000000', '#4a7c59', '#3d6b4f', '#5a8f6a', '#2d5a3d', '#6ba37c', '#4e8549', '#7b9f6d',
+                '#8fbc8f', '#7aa87a', '#9bc49b', '#6b9e6b', '#a8d4a8', '#8fc88f', '#bce0bc', '#7cb87c',
+                '#c4eec4', '#d4f0d4', '#e8f8e8', '#a8d8a8', '#8b6f47', '#7a5f3d', '#9c7f5f', '#6b5a3d',
+                '#b38f6f', '#8f7f5f', '#c49f7f', '#a8a87f', '#d4b08f', '#c4a87f', '#e0c49f', '#b49f7f',
+                '#f0d8b0', '#e8d0a8', '#f8e0c0', '#d8c0a0', '#fff8e8', '#fff0d8', '#fff8e0', '#e8d8c0',
+                '#5a7f9f', '#4a6f8f', '#6a8faf', '#3a5f7f', '#7a9fbf', '#5a8f9f', '#8aafcf', '#6a9faf',
+                '#9abfdf', '#8aafc8', '#a8cfdf', '#7a9fb8', '#b8e0f0', '#a8d8e8', '#c8e8f8', '#98c8e0',
+                '#d8f0f8', '#e8f8fc', '#f0fcff', '#c8e8f0', '#7f7f7f', '#6f6f6f', '#8f8f8f', '#5f5f5f',
+                '#9f9f9f'
+            ];
+            return colors[tileId % colors.length] || colors[0];
+        }
+        
+        function renderMinimap() {
+            const scale = Math.min(200 / canvas.width, 200 / canvas.height);
+            minimapCtx.fillStyle = '#0f3460';
+            minimapCtx.fillRect(0, 0, 200, 200);
+            minimapCtx.drawImage(canvas, 0, 0, 200, 200);
+            minimapCtx.strokeStyle = '#e94560';
+            minimapCtx.lineWidth = 2;
+            minimapCtx.strokeRect(0, 0, 200, 200);
+        }
+        
+        function getTileAtPosition(x, y) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (x - rect.left) * scaleX;
+            const canvasY = (y - rect.top) * scaleY;
+            const tileX = Math.floor(canvasX / tilemapData.tileSize);
+            const tileY = Math.floor(canvasY / tilemapData.tileSize);
+            if (tileX >= 0 && tileX < tilemapData.width && tileY >= 0 && tileY < tilemapData.height) {
+                return { x: tileX, y: tileY };
+            }
+            return null;
+        }
+        
+        function paintTile(tileX, tileY) {
+            const index = tileY * tilemapData.width + tileX;
+            const currentTileValue = parseInt(document.getElementById('currentTile').value);
+            if (currentTool === 'paint') {
+                tilemapData.layers[currentLayer].data[index] = currentTileValue;
+            } else if (currentTool === 'erase') {
+                tilemapData.layers[currentLayer].data[index] = 0;
+            } else if (currentTool === 'picker') {
+                const pickedTile = tilemapData.layers[currentLayer].data[index];
+                selectTile(pickedTile);
+                setTool('paint');
+            }
+            renderMap();
+            updateJSON();
+        }
+        
+        function fillTile(startX, startY) {
+            saveState();
+            const currentTileValue = parseInt(document.getElementById('currentTile').value);
+            const layer = tilemapData.layers[currentLayer];
+            const startIndex = startY * tilemapData.width + startX;
+            const targetTile = layer.data[startIndex];
+            if (targetTile === currentTileValue) return;
+            const stack = [[startX, startY]];
+            const visited = new Set();
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= tilemapData.width || y < 0 || y >= tilemapData.height) continue;
+                const index = y * tilemapData.width + x;
+                if (layer.data[index] !== targetTile) continue;
+                visited.add(key);
+                layer.data[index] = currentTileValue;
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+            renderMap();
+            updateJSON();
+        }
+        
+        function addSpawnPointAt(x, y) {
+            const name = prompt('Spawn noktası adı:', `spawn_${tilemapData.spawnPoints.length}`);
+            if (name) {
+                const colors = ['#e94560', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e74c3c'];
+                tilemapData.spawnPoints.push({
+                    name: name,
+                    x: x,
+                    y: y,
+                    color: colors[tilemapData.spawnPoints.length % colors.length]
+                });
+                renderSpawnPoints();
+                updateJSON();
+            }
+        }
+        
+        function setupEventListeners() {
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const pos = getTileAtPosition(e.clientX, e.clientY);
+                if (pos) {
+                    if (currentTool === 'fill') {
+                        fillTile(pos.x, pos.y);
+                    } else if (currentTool === 'spawn') {
+                        addSpawnPointAt(pos.x, pos.y);
+                    } else {
+                        paintTile(pos.x, pos.y);
+                    }
+                    lastDrawPosition = pos;
+                }
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const pos = getTileAtPosition(e.clientX, e.clientY);
+                if (pos) {
+                    document.getElementById('mouseCoords').textContent = `X: ${pos.x}, Y: ${pos.y}`;
+                    document.getElementById('coordsText').textContent = `X: ${pos.x}, Y: ${pos.y}`;
+                }
+                if (!isDrawing) return;
+                if (pos && (pos.x !== lastDrawPosition?.x || pos.y !== lastDrawPosition?.y)) {
+                    if (currentTool !== 'fill' && currentTool !== 'spawn') {
+                        paintTile(pos.x, pos.y);
+                    }
+                    lastDrawPosition = pos;
+                }
+            });
+            
+            canvas.addEventListener('mouseup', () => { isDrawing = false; lastDrawPosition = null; });
+            canvas.addEventListener('mouseleave', () => { isDrawing = false; lastDrawPosition = null; });
+            document.getElementById('currentTile').addEventListener('change', (e) => selectTile(parseInt(e.target.value)));
+        }
+        
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') { e.preventDefault(); undo(); }
+                    else if (e.key === 'y') { e.preventDefault(); redo(); }
+                    else if (e.key === 's') { e.preventDefault(); saveToGame(); }
+                } else {
+                    switch(e.key.toLowerCase()) {
+                        case 'b': setTool('paint'); break;
+                        case 'e': setTool('erase'); break;
+                        case 'f': setTool('fill'); break;
+                        case 's': setTool('select'); break;
+                        case 'p': setTool('spawn'); break;
+                        case 'i': setTool('picker'); break;
+                        case ' ': setTool('pan'); break;
+                        case '+': case '=': zoomIn(); break;
+                        case '-': case '_': zoomOut(); break;
+                    }
+                }
+            });
+        }
+        
+        function updateJSON() {
+            document.getElementById('jsonEditor').value = JSON.stringify(tilemapData, null, 2);
+            localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+        }
+        
+        function applyJSON() {
+            try {
+                saveState();
+                const newData = JSON.parse(document.getElementById('jsonEditor').value);
+                tilemapData = newData;
+                setupCanvas();
+                renderLayersList();
+                renderMap();
+                updateStatus('JSON uygulandı');
+            } catch (error) {
+                updateStatus('JSON hatası: ' + error.message);
+            }
+        }
+        
+        function applyToGame() {
+            if (window.opener) {
+                window.opener.postMessage({ type: 'tilemapUpdate', tilemapData: tilemapData }, '*');
+                updateStatus('Tilemap verileri oyuna gönderildi!');
+            } else {
+                updateStatus('Oyun penceresi bulunamadı');
+            }
+        }
+        
+        function saveToGame() {
+            const dataStr = JSON.stringify(tilemapData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tilemap-data.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            updateStatus('Tilemap verileri kaydedildi');
+        }
+        
+        function exportJSON() {
+            const dataStr = JSON.stringify(tilemapData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tilemap.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            updateStatus('JSON dışa aktarıldı');
+        }
+        
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        saveState();
+                        tilemapData = JSON.parse(event.target.result);
+                        setupCanvas();
+                        renderLayersList();
+                        renderMap();
+                        updateJSON();
+                        updateStatus('JSON içe aktarıldı');
+                    } catch (error) {
+                        updateStatus('JSON içe aktarma hatası: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        function copyToClipboard() {
+            navigator.clipboard.writeText(JSON.stringify(tilemapData, null, 2));
+            updateStatus('JSON panoya kopyalandı');
+        }
+        
+        function loadFromClipboard() {
+            navigator.clipboard.readText().then(text => {
+                try {
+                    saveState();
+                    tilemapData = JSON.parse(text);
+                    setupCanvas();
+                    renderLayersList();
+                    renderMap();
+                    updateJSON();
+                    updateStatus('JSON panodan yüklendi');
+                } catch (error) {
+                    updateStatus('Panodan yükleme hatası: ' + error.message);
+                }
+            });
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('statusBar').querySelector('#statusText').textContent = message;
+        }
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
