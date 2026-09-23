@@ -1346,23 +1346,32 @@ class MainScene extends Phaser.Scene {
     this.setPlayerHitbox();
   }
 
+  getMobileControlMetrics() {
+    const compact = this.scale.width < 600 || this.scale.height < 560;
+    return compact
+      ? { dockWidth: 148, dockHeight: 214, dockRight: 10, dockBottom: 10, joystickX: 82, joystickBottom: 82, joystickRadius: 58, thumbRadius: 21, attackRight: 72, attackBottom: 78, attackRadius: 43, equipRight: 72, equipBottom: 154, equipRadius: 35, hintBottom: 190 }
+      : { dockWidth: 176, dockHeight: 252, dockRight: 14, dockBottom: 18, joystickX: 120, joystickBottom: 120, joystickRadius: 72, thumbRadius: 26, attackRight: 118, attackBottom: 118, attackRadius: 52, equipRight: 118, equipBottom: 210, equipRadius: 42, hintBottom: 251 };
+  }
+
   createMobileControls() {
     const width = this.scale.width;
     const height = this.scale.height;
+    const metrics = this.getMobileControlMetrics();
+    this.mobileMetrics = metrics;
     const controlDock = this.add.graphics();
     controlDock.fillStyle(0x06111d, 0.72);
-    controlDock.fillRoundedRect(width - 190, height - 270, 176, 252, 26);
+    controlDock.fillRoundedRect(width - metrics.dockWidth - metrics.dockRight, height - metrics.dockHeight - metrics.dockBottom, metrics.dockWidth, metrics.dockHeight, 26);
     controlDock.lineStyle(1, 0x416a80, 0.72);
-    controlDock.strokeRoundedRect(width - 190, height - 270, 176, 252, 26);
+    controlDock.strokeRoundedRect(width - metrics.dockWidth - metrics.dockRight, height - metrics.dockHeight - metrics.dockBottom, metrics.dockWidth, metrics.dockHeight, 26);
     this.uiContainer.add(controlDock);
     this.controlDock = controlDock;
 
-    const joystickBase = this.add.circle(0, 0, 72, 0x081725, 0.78).setStrokeStyle(4, 0x72b6c7, 0.75);
-    const joystickThumb = this.add.circle(0, 0, 26, 0x9ee6dc, 0.92).setStrokeStyle(3, 0xffffff, 0.8);
+    const joystickBase = this.add.circle(0, 0, metrics.joystickRadius, 0x081725, 0.78).setStrokeStyle(4, 0x72b6c7, 0.75);
+    const joystickThumb = this.add.circle(0, 0, metrics.thumbRadius, 0x9ee6dc, 0.92).setStrokeStyle(3, 0xffffff, 0.8);
     this.joystick = this.plugins.get('rexVirtualJoystick').add(this, {
-      x: 120,
-      y: height - 120,
-      radius: 72,
+      x: metrics.joystickX,
+      y: height - metrics.joystickBottom,
+      radius: metrics.joystickRadius,
       base: joystickBase,
       thumb: joystickThumb,
       fixed: true
@@ -1370,7 +1379,7 @@ class MainScene extends Phaser.Scene {
 
     this.uiContainer.add([joystickBase, joystickThumb]);
 
-    this.attackButton = this.createActionButton('ATTACK', width - 118, height - 118, 52, 0x1f8fff, () => {
+    this.attackButton = this.createActionButton('ATTACK', width - metrics.attackRight, height - metrics.attackBottom, metrics.attackRadius, 0x1f8fff, () => {
       this.triggerAttack();
     }, 'sword');
 
@@ -1378,7 +1387,7 @@ class MainScene extends Phaser.Scene {
       this.toggleInventory();
     }, 'bag');
 
-    this.equipButton = this.createActionButton('EQUIP', width - 118, height - 210, 42, 0x7b4dff, () => {
+    this.equipButton = this.createActionButton('EQUIP', width - metrics.equipRight, height - metrics.equipBottom, metrics.equipRadius, 0x7b4dff, () => {
       this.currentWeapon = this.currentWeapon === 'sword' ? 'unarmed' : 'sword';
       this.updateEquipButtonLabel();
       const idleKey = `${this.currentWeapon === 'sword' ? 'sword' : 'unarmed'}_idle_${this.lastFacing || 'front'}`;
@@ -1389,7 +1398,7 @@ class MainScene extends Phaser.Scene {
 
     this.updateEquipButtonLabel();
 
-    this.combatHint = this.add.text(width - 118, height - 251, 'COMBAT', {
+    this.combatHint = this.add.text(width - metrics.attackRight, height - metrics.hintBottom, 'COMBAT', {
       fontFamily: 'Trebuchet MS, sans-serif',
       fontSize: '9px',
       color: '#83b7c5',
@@ -1773,29 +1782,33 @@ class MainScene extends Phaser.Scene {
   resizeUi() {
     const width = this.scale.width;
     const height = this.scale.height;
+    const metrics = this.getMobileControlMetrics();
+    this.mobileMetrics = metrics;
 
     if (this.controlDock) {
       this.controlDock.clear();
       this.controlDock.fillStyle(0x06111d, 0.72);
-      this.controlDock.fillRoundedRect(width - 190, height - 270, 176, 252, 26);
+      this.controlDock.fillRoundedRect(width - metrics.dockWidth - metrics.dockRight, height - metrics.dockHeight - metrics.dockBottom, metrics.dockWidth, metrics.dockHeight, 26);
       this.controlDock.lineStyle(1, 0x416a80, 0.72);
-      this.controlDock.strokeRoundedRect(width - 190, height - 270, 176, 252, 26);
+      this.controlDock.strokeRoundedRect(width - metrics.dockWidth - metrics.dockRight, height - metrics.dockHeight - metrics.dockBottom, metrics.dockWidth, metrics.dockHeight, 26);
     }
 
     if (this.joystick) {
-      this.joystick.setPosition(120, height - 120);
+      this.joystick.setPosition(metrics.joystickX, height - metrics.joystickBottom);
     }
 
     if (this.attackButton) {
-      this.attackButton.container.setPosition(width - 118, height - 118);
+      this.attackButton.container.setPosition(width - metrics.attackRight, height - metrics.attackBottom);
+      this.attackButton.container.setScale(metrics.attackRadius / 52);
     }
 
     if (this.equipButton) {
-      this.equipButton.container.setPosition(width - 118, height - 210);
+      this.equipButton.container.setPosition(width - metrics.equipRight, height - metrics.equipBottom);
+      this.equipButton.container.setScale(metrics.equipRadius / 42);
     }
 
     if (this.combatHint) {
-      this.combatHint.setPosition(width - 118, height - 251);
+      this.combatHint.setPosition(width - metrics.attackRight, height - metrics.hintBottom);
     }
 
     if (this.inventoryButton) {
