@@ -610,6 +610,7 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.ignore(this.uiContainer);
 
     this.createMobileControls();
+    this.createPremiumHud();
     this.createInventoryPanel();
 
     this.player.on('animationcomplete', (anim) => {
@@ -1327,9 +1328,16 @@ class MainScene extends Phaser.Scene {
   createMobileControls() {
     const width = this.scale.width;
     const height = this.scale.height;
+    const controlDock = this.add.graphics();
+    controlDock.fillStyle(0x06111d, 0.72);
+    controlDock.fillRoundedRect(width - 190, height - 270, 176, 252, 26);
+    controlDock.lineStyle(1, 0x416a80, 0.72);
+    controlDock.strokeRoundedRect(width - 190, height - 270, 176, 252, 26);
+    this.uiContainer.add(controlDock);
+    this.controlDock = controlDock;
 
-    const joystickBase = this.add.circle(0, 0, 72, 0x111111, 0.35).setStrokeStyle(4, 0xffffff, 0.85);
-    const joystickThumb = this.add.circle(0, 0, 26, 0xffffff, 0.9);
+    const joystickBase = this.add.circle(0, 0, 72, 0x081725, 0.78).setStrokeStyle(4, 0x72b6c7, 0.75);
+    const joystickThumb = this.add.circle(0, 0, 26, 0x9ee6dc, 0.92).setStrokeStyle(3, 0xffffff, 0.8);
     this.joystick = this.plugins.get('rexVirtualJoystick').add(this, {
       x: 120,
       y: height - 120,
@@ -1341,7 +1349,7 @@ class MainScene extends Phaser.Scene {
 
     this.uiContainer.add([joystickBase, joystickThumb]);
 
-    this.attackButton = this.createActionButton('ATTACK', width - 118, height - 118, 48, 0x1f8fff, () => {
+    this.attackButton = this.createActionButton('ATTACK', width - 118, height - 118, 52, 0x1f8fff, () => {
       this.triggerAttack();
     }, 'sword');
 
@@ -1359,6 +1367,14 @@ class MainScene extends Phaser.Scene {
     }, 'shield');
 
     this.updateEquipButtonLabel();
+
+    this.combatHint = this.add.text(width - 118, height - 251, 'COMBAT', {
+      fontFamily: 'Trebuchet MS, sans-serif',
+      fontSize: '9px',
+      color: '#83b7c5',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.uiContainer.add(this.combatHint);
   }
 
   createActionButton(labelText, x, y, radius, color, onPress, iconType = labelText.toLowerCase()) {
@@ -1445,15 +1461,15 @@ class MainScene extends Phaser.Scene {
   }
 
   createPremiumHud() {
-    const panelWidth = Math.min(300, this.scale.width - 32);
+    const panelWidth = Math.min(330, this.scale.width - 32);
     this.hudContainer = this.add.container(0, 0);
     this.uiContainer.add(this.hudContainer);
 
     const panel = this.add.graphics();
     panel.fillStyle(0x08111f, 0.94);
-    panel.fillRoundedRect(16, 16, panelWidth, 116, 18);
+    panel.fillRoundedRect(16, 16, panelWidth, 146, 18);
     panel.lineStyle(1, 0x4f7898, 0.85);
-    panel.strokeRoundedRect(16, 16, panelWidth, 116, 18);
+    panel.strokeRoundedRect(16, 16, panelWidth, 146, 18);
     this.hudContainer.add(panel);
 
     this.levelBadge = this.add.graphics();
@@ -1471,7 +1487,7 @@ class MainScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.hudContainer.add(this.levelText);
 
-    this.rankText = this.add.text(78, 30, 'WANDERER', {
+    this.rankText = this.add.text(78, 30, 'AHRON  •  WANDERER', {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
       color: '#d9e8f0',
@@ -1479,7 +1495,14 @@ class MainScene extends Phaser.Scene {
     });
     this.hudContainer.add(this.rankText);
 
-    this.hpLabel = this.add.text(78, 52, '', {
+    this.regionText = this.add.text(78, 46, 'MEADOWFALL  /  CENTRAL WARD', {
+      fontSize: '9px',
+      color: '#76b7bd',
+      fontStyle: 'bold'
+    });
+    this.hudContainer.add(this.regionText);
+
+    this.hpLabel = this.add.text(78, 64, '', {
       fontSize: '11px',
       color: '#b8cbd6'
     });
@@ -1487,7 +1510,7 @@ class MainScene extends Phaser.Scene {
     this.hpBar = this.add.graphics();
     this.hudContainer.add(this.hpBar);
 
-    this.xpLabel = this.add.text(78, 86, '', {
+    this.xpLabel = this.add.text(78, 99, '', {
       fontSize: '11px',
       color: '#b8cbd6'
     });
@@ -1495,11 +1518,18 @@ class MainScene extends Phaser.Scene {
     this.xpBar = this.add.graphics();
     this.hudContainer.add(this.xpBar);
 
-    this.killText = this.add.text(78, 111, '', {
+    this.killText = this.add.text(78, 119, '', {
       fontSize: '10px',
       color: '#83a8b8'
     });
     this.hudContainer.add(this.killText);
+
+    this.questText = this.add.text(78, 137, 'QUEST  •  Secure the town road', {
+      fontSize: '9px',
+      color: '#e8c778',
+      fontStyle: 'bold'
+    });
+    this.hudContainer.add(this.questText);
 
     this.levelUpText = this.add.text(this.scale.width / 2, 146, '', {
       fontFamily: 'Georgia, serif',
@@ -1530,8 +1560,8 @@ class MainScene extends Phaser.Scene {
     if (this.hpBar) {
       const healthRatio = Phaser.Math.Clamp(this.playerHealth / MAX_PLAYER_HEALTH, 0, 1);
       this.hpLabel.setText(`HP  ${Math.max(0, this.playerHealth)} / ${MAX_PLAYER_HEALTH}`);
-      this.drawProgressBar(this.hpBar, 78, 68, 214, 10, healthRatio, 0x52d273, 0x52d273);
-      this.killText.setText(`HUNTS  ${this.killCount}`);
+      this.drawProgressBar(this.hpBar, 78, 80, 236, 10, healthRatio, 0x52d273, 0x52d273);
+      this.killText.setText(`HUNTS  ${this.killCount}   •   ACTIVE`);
     }
     this.updatePlayerNameplate();
   }
@@ -1554,7 +1584,7 @@ class MainScene extends Phaser.Scene {
       ease: 'Cubic.easeOut',
       onUpdate: (tween) => {
         this.displayedXpRatio = tween.getValue();
-        this.drawProgressBar(this.xpBar, 78, 101, 214, 7, this.displayedXpRatio, 0x5fd9ef, 0x5fd9ef);
+        this.drawProgressBar(this.xpBar, 78, 112, 236, 7, this.displayedXpRatio, 0x5fd9ef, 0x5fd9ef);
       },
       onComplete: () => {
         this.displayedXpRatio = xpRatio;
@@ -1723,6 +1753,14 @@ class MainScene extends Phaser.Scene {
     const width = this.scale.width;
     const height = this.scale.height;
 
+    if (this.controlDock) {
+      this.controlDock.clear();
+      this.controlDock.fillStyle(0x06111d, 0.72);
+      this.controlDock.fillRoundedRect(width - 190, height - 270, 176, 252, 26);
+      this.controlDock.lineStyle(1, 0x416a80, 0.72);
+      this.controlDock.strokeRoundedRect(width - 190, height - 270, 176, 252, 26);
+    }
+
     if (this.joystick) {
       this.joystick.setPosition(120, height - 120);
     }
@@ -1733,6 +1771,10 @@ class MainScene extends Phaser.Scene {
 
     if (this.equipButton) {
       this.equipButton.container.setPosition(width - 118, height - 210);
+    }
+
+    if (this.combatHint) {
+      this.combatHint.setPosition(width - 118, height - 251);
     }
 
     if (this.inventoryButton) {
