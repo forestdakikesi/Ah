@@ -23,12 +23,29 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0b1020 0%, #111b2f 100%);
-            color: #eee;
+            background:
+                radial-gradient(circle at top, rgba(78, 111, 180, 0.28), transparent 35%),
+                linear-gradient(135deg, #0a1020 0%, #121f33 52%, #0d1626 100%);
+            color: #f2f5fb;
             display: flex;
             height: 100vh;
             overflow: hidden;
             touch-action: manipulation;
+        }
+
+        .editor-shell {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-glass {
+            background: rgba(17, 27, 47, 0.9);
+            border: 1px solid rgba(116, 150, 255, 0.22);
+            box-shadow: 0 14px 30px rgba(2, 6, 20, 0.42);
+            backdrop-filter: blur(10px);
         }
 
         button, input, select, textarea {
@@ -41,10 +58,10 @@
         
         .sidebar {
             width: 320px;
-            background: #16213e;
+            background: rgba(17, 27, 47, 0.94);
             padding: 15px;
             overflow-y: auto;
-            border-right: 2px solid #0f3460;
+            border-right: 2px solid rgba(89, 128, 221, 0.32);
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -57,15 +74,80 @@
             padding: 15px;
             gap: 15px;
         }
+
+        .hud-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, rgba(10, 16, 32, 0.9), rgba(17, 31, 53, 0.95));
+            border: 1px solid rgba(111, 147, 255, 0.24);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .hud-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 12px;
+            color: #dfe7ff;
+        }
+
+        .live-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(31, 212, 146, 0.14);
+            border: 1px solid rgba(81, 219, 170, 0.4);
+            color: #9ef2c8;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .live-pill::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #4af7b1;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(74, 247, 177, 0.9);
+        }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mini-chip {
+            border-radius: 999px;
+            background: rgba(101, 128, 197, 0.2);
+            border: 1px solid rgba(147, 167, 255, 0.25);
+            color: #dfe7ff;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
         
         .toolbar {
-            background: #16213e;
+            background: rgba(16, 24, 40, 0.9);
             padding: 10px 15px;
-            border-radius: 8px;
+            border-radius: 12px;
             display: flex;
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            border: 1px solid rgba(111, 147, 255, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
         
         .editor-container {
@@ -77,13 +159,15 @@
         
         .map-preview {
             flex: 1;
-            background: #0f3460;
-            border-radius: 8px;
+            background: linear-gradient(180deg, #0f1d2f, #0b1220);
+            border-radius: 14px;
             overflow: auto;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid rgba(105, 139, 255, 0.25);
+            box-shadow: inset 0 0 18px rgba(36, 63, 104, 0.5);
         }
         
         .right-panel {
@@ -94,19 +178,21 @@
         }
         
         .tile-palette {
-            background: #16213e;
-            border-radius: 8px;
+            background: rgba(18, 28, 46, 0.96);
+            border-radius: 10px;
             padding: 10px;
             overflow-y: auto;
             flex: 1;
+            border: 1px solid rgba(120, 153, 255, 0.2);
         }
         
         .spawn-points {
-            background: #16213e;
-            border-radius: 8px;
+            background: rgba(18, 28, 46, 0.96);
+            border-radius: 10px;
             padding: 10px;
             max-height: 200px;
             overflow-y: auto;
+            border: 1px solid rgba(120, 153, 255, 0.2);
         }
         
         .control-group {
@@ -256,24 +342,25 @@
         }
         
         .status-bar {
-            background: #0f3460;
+            background: rgba(14, 24, 38, 0.98);
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 10px;
             font-size: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid rgba(135, 154, 255, 0.18);
         }
         
         .json-editor {
             width: 100%;
             height: 100px;
-            background: #0f3460;
+            background: rgba(7, 14, 26, 0.94);
             color: #00ff00;
             font-family: 'Courier New', monospace;
             padding: 10px;
-            border: none;
-            border-radius: 4px;
+            border: 1px solid rgba(116, 154, 255, 0.2);
+            border-radius: 10px;
             resize: vertical;
             font-size: 11px;
         }
@@ -321,11 +408,12 @@
         .minimap {
             width: 100%;
             height: 150px;
-            background: #0f3460;
-            border-radius: 4px;
+            background: rgba(18, 28, 46, 0.96);
+            border-radius: 10px;
             margin-bottom: 10px;
             overflow: hidden;
             position: relative;
+            border: 1px solid rgba(120, 153, 255, 0.2);
         }
         
         .minimap canvas {
@@ -334,12 +422,13 @@
         }
         
         .coordinates {
-            background: #0f3460;
+            background: rgba(11, 16, 28, 0.9);
             padding: 8px;
-            border-radius: 4px;
+            border-radius: 999px;
             font-size: 11px;
             display: flex;
             justify-content: space-between;
+            border: 1px solid rgba(122, 154, 255, 0.2);
         }
         
         .responsive-toggle {
@@ -467,110 +556,120 @@
 </head>
 <body>
     <button class="responsive-toggle" onclick="toggleSidebar()">☰</button>
-    
-    <div class="sidebar" id="sidebar">
-        <h2>🗺️ Advanced Editor</h2>
-        
-        <div class="control-group">
-            <label>Harita Boyutu</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="number" id="mapWidth" value="64" min="8" max="256" placeholder="Genişlik">
-                <input type="number" id="mapHeight" value="64" min="8" max="256" placeholder="Yükseklik">
-            </div>
-            <button onclick="resizeMap()">📐 Yeniden Boyutlandır</button>
-        </div>
-        
-        <div class="control-group">
-            <label>Araçlar</label>
-            <div class="tool-buttons">
-                <button onclick="setTool('paint')" id="paintTool" title="Boya (B)">🖌️</button>
-                <button onclick="setTool('erase')" id="eraseTool" title="Sil (E)">🧽</button>
-                <button onclick="setTool('fill')" id="fillTool" title="Doldur (F)">🪣</button>
-                <button onclick="setTool('select')" id="selectTool" title="Seç (S)">👆</button>
-                <button onclick="setTool('spawn')" id="spawnTool" title="Spawn (P)">📍</button>
-                <button onclick="setTool('picker')" id="pickerTool" title="Renk Seçici (I)">💉</button>
-                <button onclick="undo()" title="Geri Al (Ctrl+Z)">↩️</button>
-                <button onclick="redo()" title="İleri Al (Ctrl+Y)">↪️</button>
-            </div>
-            <div class="shortcut-hint">Kısayollar: B-Boya, E-Sil, F-Doldur, S-Seç, P-Spawn, I-Renk</div>
-        </div>
-        
-        <div class="control-group">
-            <label>Geçerli Tile</label>
-            <input type="number" id="currentTile" value="1" min="0" max="64">
-            <div id="currentTilePreview" class="tile-item selected">1</div>
-            <div class="tile-counter" id="tileCounter">Tile: 1/64</div>
-        </div>
-        
-        <div class="control-group">
-            <label>İşlemler</label>
-            <div class="action-buttons">
-                <button onclick="clearMap()">🗑️ Temizle</button>
-                <button onclick="clearLayer()">🧹 Katman Temizle</button>
-                <button onclick="exportJSON()">📤 Dışa Aktar</button>
-                <button onclick="importJSON()">📥 İçe Aktar</button>
-                <button onclick="copyToClipboard()">📋 Kopyala</button>
-                <button onclick="loadFromClipboard()">📋 Yükle</button>
-                <button onclick="applyToGame()" style="background: #4CAF50;">🎮 Oyuna Uygula</button>
-                <button onclick="saveToGame()" style="background: #2196F3;">💾 Kaydet</button>
-            </div>
-        </div>
-        
-        <div class="layer-info">
-            <h3>📚 Katmanlar</h3>
-            <div id="layersList"></div>
-            <button onclick="addLayer()">+ Katman Ekle</button>
-        </div>
-        
-        <div class="status-bar" id="statusBar">
-            <span id="statusText">Hazır</span>
-            <span id="coordsText">X: 0, Y: 0</span>
-        </div>
-    </div>
-    
-    <div class="main-content">
-        <div class="toolbar">
-            <div class="zoom-controls">
-                <button onclick="zoomIn()">➕</button>
-                <button onclick="zoomOut()">➖</button>
-                <button onclick="resetZoom()">🔄</button>
-                <span id="zoomLevel">100%</span>
-            </div>
-            <div class="coordinates" id="mouseCoords">
-                X: 0, Y: 0
-            </div>
-        </div>
-        
-        <div class="editor-container">
-            <div class="map-preview" id="mapPreview">
-                <canvas id="mapCanvas"></canvas>
-            </div>
-            
-            <div class="right-panel">
-                <div class="minimap">
-                    <h3>🗺️ Minimap</h3>
-                    <canvas id="minimapCanvas"></canvas>
+
+    <div class="editor-shell">
+        <div class="sidebar panel-glass" id="sidebar">
+            <h2>🗺️ World Editor</h2>
+            <div class="control-group">
+                <label>Harita Boyutu</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="mapWidth" value="64" min="8" max="256" placeholder="Genişlik">
+                    <input type="number" id="mapHeight" value="64" min="8" max="256" placeholder="Yükseklik">
                 </div>
-                
-                <div class="spawn-points">
-                    <h3>📍 Spawn Noktaları</h3>
-                    <div id="spawnPointsList"></div>
-                    <button onclick="addSpawnPoint()">+ Spawn Ekle</button>
+                <button onclick="resizeMap()">📐 Yeniden Boyutlandır</button>
+            </div>
+
+            <div class="control-group">
+                <label>Araçlar</label>
+                <div class="tool-buttons">
+                    <button onclick="setTool('paint')" id="paintTool" title="Boya (B)">🖌️</button>
+                    <button onclick="setTool('erase')" id="eraseTool" title="Sil (E)">🧽</button>
+                    <button onclick="setTool('fill')" id="fillTool" title="Doldur (F)">🪣</button>
+                    <button onclick="setTool('select')" id="selectTool" title="Seç (S)">👆</button>
+                    <button onclick="setTool('spawn')" id="spawnTool" title="Spawn (P)">📍</button>
+                    <button onclick="setTool('picker')" id="pickerTool" title="Renk Seçici (I)">💉</button>
+                    <button onclick="undo()" title="Geri Al (Ctrl+Z)">↩️</button>
+                    <button onclick="redo()" title="İleri Al (Ctrl+Y)">↪️</button>
                 </div>
-                
-                <div class="tile-palette">
-                    <h3>🎨 Tile Paleti</h3>
-                    <div class="category-tabs" id="categoryTabs"></div>
-                    <div class="tile-grid" id="tilePalette"></div>
-                    <div class="tile-counter" id="paletteCounter">Toplam: 0 tiles</div>
+                <div class="shortcut-hint">Kısayollar: B-Boya, E-Sil, F-Doldur, S-Seç, P-Spawn, I-Renk</div>
+            </div>
+
+            <div class="control-group">
+                <label>Geçerli Tile</label>
+                <input type="number" id="currentTile" value="1" min="0" max="64">
+                <div id="currentTilePreview" class="tile-item selected">1</div>
+                <div class="tile-counter" id="tileCounter">Tile: 1/64</div>
+            </div>
+
+            <div class="control-group">
+                <label>İşlemler</label>
+                <div class="action-buttons">
+                    <button onclick="clearMap()">🗑️ Temizle</button>
+                    <button onclick="clearLayer()">🧹 Katman Temizle</button>
+                    <button onclick="exportJSON()">📤 Dışa Aktar</button>
+                    <button onclick="importJSON()">📥 İçe Aktar</button>
+                    <button onclick="copyToClipboard()">📋 Kopyala</button>
+                    <button onclick="loadFromClipboard()">📋 Yükle</button>
+                    <button onclick="applyToGame()" style="background: #4CAF50;">🎮 Oyuna Uygula</button>
+                    <button onclick="saveToGame()" style="background: #2196F3;">💾 Kaydet</button>
                 </div>
             </div>
+
+            <div class="layer-info">
+                <h3>📚 Katmanlar</h3>
+                <div id="layersList"></div>
+                <button onclick="addLayer()">+ Katman Ekle</button>
+            </div>
+
+            <div class="status-bar" id="statusBar">
+                <span id="statusText">Hazır</span>
+                <span id="coordsText">X: 0, Y: 0</span>
+            </div>
         </div>
-        
-        <div class="controls">
-            <label>JSON Verisi</label>
-            <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
-            <button onclick="applyJSON()">JSON'i Uygula</button>
+
+        <div class="main-content">
+            <div class="hud-bar panel-glass">
+                <div class="hud-title">⚔️ World Builder</div>
+                <div class="meta-row">
+                    <span class="live-pill">Live sync</span>
+                    <span class="mini-chip" id="mapMeta">64x64</span>
+                    <span class="mini-chip" id="layerMeta">Layer: ground</span>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="zoom-controls">
+                    <button onclick="zoomIn()">➕</button>
+                    <button onclick="zoomOut()">➖</button>
+                    <button onclick="resetZoom()">🔄</button>
+                    <span id="zoomLevel">100%</span>
+                </div>
+                <div class="coordinates" id="mouseCoords">
+                    X: 0, Y: 0
+                </div>
+            </div>
+
+            <div class="editor-container">
+                <div class="map-preview" id="mapPreview">
+                    <canvas id="mapCanvas"></canvas>
+                </div>
+
+                <div class="right-panel">
+                    <div class="minimap">
+                        <h3>🗺️ Minimap</h3>
+                        <canvas id="minimapCanvas"></canvas>
+                    </div>
+
+                    <div class="spawn-points">
+                        <h3>📍 Spawn Noktaları</h3>
+                        <div id="spawnPointsList"></div>
+                        <button onclick="addSpawnPoint()">+ Spawn Ekle</button>
+                    </div>
+
+                    <div class="tile-palette">
+                        <h3>🎨 Tile Paleti</h3>
+                        <div class="category-tabs" id="categoryTabs"></div>
+                        <div class="tile-grid" id="tilePalette"></div>
+                        <div class="tile-counter" id="paletteCounter">Toplam: 0 tiles</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <label>JSON Verisi</label>
+                <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
+                <button onclick="applyJSON()">JSON'i Uygula</button>
+            </div>
         </div>
     </div>
 
@@ -601,6 +700,10 @@
         let isDrawing = false;
         let lastDrawPosition = null;
         let zoomLevel = 1;
+        let liveSyncTimer = null;
+        const undoStack = [];
+        const redoStack = [];
+        let isRestoringHistory = false;
         const MIN_ZOOM = 0.6;
         const MAX_ZOOM = 2.4;
         
@@ -613,7 +716,7 @@
             const savedData = localStorage.getItem('tilemapData');
             if (savedData) {
                 try {
-                    tilemapData = JSON.parse(savedData);
+                    tilemapData = normalizeEditorTilemapData(JSON.parse(savedData));
                     document.getElementById('mapWidth').value = tilemapData.width;
                     document.getElementById('mapHeight').value = tilemapData.height;
                     updateStatus('Kaydedilen harita yüklendi');
@@ -630,6 +733,55 @@
             updateJSON();
             setupEventListeners();
         }
+
+        function normalizeEditorTilemapData(rawData) {
+            if (!rawData || !Array.isArray(rawData.layers)) {
+                throw new Error('Geçersiz tilemap kaydı: layers gerekli.');
+            }
+
+            const width = Number(rawData.width);
+            const height = Number(rawData.height);
+            if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
+                throw new Error('Geçersiz tilemap boyutu.');
+            }
+
+            return {
+                ...rawData,
+                version: 2,
+                width,
+                height,
+                tileSize: Number(rawData.tileSize) || 32,
+                layers: rawData.layers.length ? rawData.layers.map((layer, index) => {
+                    const sourceData = Array.isArray(layer.data) && layer.data.length && Array.isArray(layer.data[0])
+                        ? layer.data.flat()
+                        : Array.isArray(layer.data) ? layer.data : [];
+                    const data = Array(width * height).fill(0);
+                    for (let position = 0; position < Math.min(sourceData.length, data.length); position += 1) {
+                        const tile = sourceData[position];
+                        data[position] = tile && typeof tile === 'object' && 'index' in tile
+                            ? Number(tile.index) || 0
+                            : Number(tile) || 0;
+                    }
+                    return {
+                        ...layer,
+                        name: layer.name || `layer_${index}`,
+                        data,
+                        visible: layer.visible !== false,
+                        opacity: Number.isFinite(Number(layer.opacity)) ? Number(layer.opacity) : 1
+                    };
+                }) : [{
+                    name: 'ground',
+                    data: Array(width * height).fill(0),
+                    visible: true,
+                    opacity: 1
+                }],
+                spawnPoints: Array.isArray(rawData.spawnPoints) ? rawData.spawnPoints.map((spawn, index) => ({
+                    x: Math.max(0, Math.min(width - 1, Number(spawn.x) || 0)),
+                    y: Math.max(0, Math.min(height - 1, Number(spawn.y) || 0)),
+                    name: spawn.name || `spawn_${index + 1}`
+                })) : []
+            };
+        }
         
         function setupCanvas() {
             const baseWidth = tilemapData.width * tilemapData.tileSize;
@@ -643,6 +795,43 @@
             canvas.style.imageRendering = 'pixelated';
             canvas.style.touchAction = 'none';
             document.getElementById('zoomLevel').textContent = `${Math.round(zoomLevel * 100)}%`;
+            updateMapMeta();
+        }
+
+        function updateMapMeta() {
+            const mapMeta = document.getElementById('mapMeta');
+            const layerMeta = document.getElementById('layerMeta');
+            if (mapMeta) {
+                mapMeta.textContent = `${tilemapData.width}x${tilemapData.height}`;
+            }
+            if (layerMeta && tilemapData.layers[currentLayer]) {
+                layerMeta.textContent = `Layer: ${tilemapData.layers[currentLayer].name}`;
+            }
+        }
+
+        function broadcastMapUpdate({ silent = false } = {}) {
+            const snapshot = JSON.stringify(tilemapData);
+            localStorage.setItem('tilemapData', snapshot);
+
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage({ type: 'tilemapUpdate', tilemapData }, '*');
+                    if (!silent) {
+                        updateStatus('Canlı önizleme güncellendi');
+                    }
+                } else if (!silent) {
+                    updateStatus('Harita yerelde kaydedildi');
+                }
+            } catch (error) {
+                console.warn('Live sync failed:', error);
+            }
+        }
+
+        function scheduleLiveSync() {
+            clearTimeout(liveSyncTimer);
+            liveSyncTimer = setTimeout(() => {
+                broadcastMapUpdate({ silent: true });
+            }, 120);
         }
 
         function zoomIn() {
@@ -786,17 +975,49 @@
             currentLayer = index;
             renderLayersList();
             renderMap();
+            updateMapMeta();
             updateStatus(`Katman: ${tilemapData.layers[index].name}`);
+        }
+
+        function createSnapshot() {
+            return JSON.stringify({ tilemapData, currentLayer });
+        }
+
+        function restoreSnapshot(snapshot) {
+            const restored = JSON.parse(snapshot);
+            tilemapData = restored.tilemapData;
+            currentLayer = Math.min(restored.currentLayer, tilemapData.layers.length - 1);
+            document.getElementById('mapWidth').value = tilemapData.width;
+            document.getElementById('mapHeight').value = tilemapData.height;
+            setupCanvas();
+            renderLayersList();
+            renderMap();
+            updateJSON();
+            broadcastMapUpdate({ silent: true });
+        }
+
+        function recordHistory() {
+            if (isRestoringHistory) return;
+            const snapshot = createSnapshot();
+            if (undoStack[undoStack.length - 1] !== snapshot) {
+                undoStack.push(snapshot);
+                if (undoStack.length > 40) undoStack.shift();
+            }
+            redoStack.length = 0;
         }
         
         function toggleLayerVisibility(index) {
+            recordHistory();
             tilemapData.layers[index].visible = !tilemapData.layers[index].visible;
             renderMap();
+            updateJSON();
+            scheduleLiveSync();
         }
         
         function addLayer() {
             const name = prompt('Katman adı:', `layer_${tilemapData.layers.length}`);
             if (name) {
+                recordHistory();
                 tilemapData.layers.push({
                     name: name,
                     data: Array(tilemapData.width * tilemapData.height).fill(0),
@@ -804,18 +1025,21 @@
                     opacity: 1
                 });
                 renderLayersList();
+                updateMapMeta();
                 updateJSON();
             }
         }
         
         function removeLayer(index) {
             if (tilemapData.layers.length > 1) {
+                recordHistory();
                 tilemapData.layers.splice(index, 1);
                 if (currentLayer >= tilemapData.layers.length) {
                     currentLayer = tilemapData.layers.length - 1;
                 }
                 renderLayersList();
                 renderMap();
+                updateMapMeta();
                 updateJSON();
             }
         }
@@ -824,14 +1048,106 @@
             currentTool = tool;
             document.querySelectorAll('.tool-buttons button').forEach(btn => {
                 btn.style.background = '#e94560';
+                btn.classList.remove('active');
             });
-            document.getElementById(tool + 'Tool').style.background = '#ff6b6b';
+            const activeButton = document.getElementById(tool + 'Tool');
+            if (activeButton) {
+                activeButton.style.background = '#ff6b6b';
+                activeButton.classList.add('active');
+            }
             updateStatus(`Araç: ${tool}`);
+        }
+        
+        function clearLayer() {
+            const layer = tilemapData.layers[currentLayer];
+            if (!layer) return;
+            recordHistory();
+            layer.data = Array(tilemapData.width * tilemapData.height).fill(0);
+            renderMap();
+            updateJSON();
+            scheduleLiveSync();
+            updateStatus(`Katman temizlendi: ${layer.name}`);
+        }
+        
+        function undo() {
+            if (!undoStack.length) {
+                updateStatus('Geri alınacak işlem yok');
+                return;
+            }
+            redoStack.push(createSnapshot());
+            isRestoringHistory = true;
+            restoreSnapshot(undoStack.pop());
+            isRestoringHistory = false;
+            updateStatus('Son işlem geri alındı');
+        }
+        
+        function redo() {
+            if (!redoStack.length) {
+                updateStatus('İleri alınacak işlem yok');
+                return;
+            }
+            undoStack.push(createSnapshot());
+            isRestoringHistory = true;
+            restoreSnapshot(redoStack.pop());
+            isRestoringHistory = false;
+            updateStatus('İşlem yeniden uygulandı');
+        }
+        
+        function addSpawnPoint() {
+            const x = Number(prompt('Spawn X koordinatı:', '10')) || 0;
+            const y = Number(prompt('Spawn Y koordinatı:', '10')) || 0;
+            if (!Number.isFinite(x) || !Number.isFinite(y)) {
+                return;
+            }
+            recordHistory();
+            const existing = Array.isArray(tilemapData.spawnPoints) ? tilemapData.spawnPoints : [];
+            tilemapData.spawnPoints = [...existing, { x, y, name: `spawn_${existing.length + 1}` }];
+            updateJSON();
+            renderMap();
+            scheduleLiveSync();
+            updateStatus(`Spawn eklendi: ${x}, ${y}`);
+        }
+
+        function renderSpawnPoints() {
+            const list = document.getElementById('spawnPointsList');
+            if (!list) return;
+            const spawnPoints = Array.isArray(tilemapData.spawnPoints) ? tilemapData.spawnPoints : [];
+            list.innerHTML = '';
+            if (!spawnPoints.length) {
+                list.innerHTML = '<div class="tile-counter">Henüz spawn noktası yok.</div>';
+                return;
+            }
+            spawnPoints.forEach((spawn, index) => {
+                const item = document.createElement('div');
+                item.className = 'spawn-point-item';
+                item.innerHTML = `
+                    <span><span class="color-dot" style="display:inline-block;background:#ffe08a"></span>${spawn.name || `spawn_${index + 1}`}<br><small>${spawn.x}, ${spawn.y}</small></span>
+                    <button type="button" onclick="removeSpawnPoint(${index})" style="width:auto;padding:2px 8px">×</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function removeSpawnPoint(index) {
+            const spawnPoints = Array.isArray(tilemapData.spawnPoints) ? tilemapData.spawnPoints : [];
+            if (!spawnPoints[index]) return;
+            recordHistory();
+            tilemapData.spawnPoints = spawnPoints.filter((_, pointIndex) => pointIndex !== index);
+            renderSpawnPoints();
+            renderMap();
+            updateJSON();
+            scheduleLiveSync();
+            updateStatus('Spawn noktası silindi');
         }
         
         function resizeMap() {
             const newWidth = parseInt(document.getElementById('mapWidth').value);
             const newHeight = parseInt(document.getElementById('mapHeight').value);
+            if (!Number.isInteger(newWidth) || !Number.isInteger(newHeight) || newWidth < 8 || newHeight < 8) {
+                updateStatus('Harita boyutu 8 ile 256 arasında olmalı');
+                return;
+            }
+            recordHistory();
             
             tilemapData.layers.forEach(layer => {
                 const newData = Array(newWidth * newHeight).fill(0);
@@ -852,15 +1168,19 @@
             
             setupCanvas();
             renderMap();
+            updateMapMeta();
             updateJSON();
+            scheduleLiveSync();
             updateStatus(`Harita boyutu: ${newWidth}x${newHeight}`);
         }
         
         function clearMap() {
             if (confirm('Tüm harita temizlensin mi?')) {
+                recordHistory();
                 tilemapData.layers[currentLayer].data = Array(tilemapData.width * tilemapData.height).fill(0);
                 renderMap();
                 updateJSON();
+                scheduleLiveSync();
                 updateStatus('Harita temizlendi');
             }
         }
@@ -872,6 +1192,7 @@
             // Render each layer
             tilemapData.layers.forEach((layer, layerIndex) => {
                 if (!layer.visible) return;
+                ctx.globalAlpha = Number(layer.opacity) || 1;
                 
                 for (let y = 0; y < tilemapData.height; y++) {
                     for (let x = 0; x < tilemapData.width; x++) {
@@ -917,6 +1238,41 @@
                 ctx.lineTo(canvas.width, y * tilemapData.tileSize);
                 ctx.stroke();
             }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)';
+            ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+            ctx.globalAlpha = 1;
+            renderMinimap();
+        }
+
+        function renderMinimap() {
+            const minimap = document.getElementById('minimapCanvas');
+            if (!minimap) return;
+            const width = minimap.clientWidth || 240;
+            const height = minimap.clientHeight || 130;
+            const minimapContext = minimap.getContext('2d');
+            minimap.width = width;
+            minimap.height = height;
+            minimapContext.fillStyle = '#0a1422';
+            minimapContext.fillRect(0, 0, width, height);
+            const cellWidth = width / tilemapData.width;
+            const cellHeight = height / tilemapData.height;
+            tilemapData.layers.forEach((layer) => {
+                if (!layer.visible) return;
+                minimapContext.globalAlpha = Number(layer.opacity) || 1;
+                layer.data.forEach((tileId, index) => {
+                    if (!tileId) return;
+                    const x = index % tilemapData.width;
+                    const y = Math.floor(index / tilemapData.width);
+                    minimapContext.fillStyle = getTileColor(tileId);
+                    minimapContext.fillRect(x * cellWidth, y * cellHeight, Math.ceil(cellWidth), Math.ceil(cellHeight));
+                });
+            });
+            minimapContext.globalAlpha = 1;
+            (tilemapData.spawnPoints || []).forEach((spawn) => {
+                minimapContext.fillStyle = '#ffe08a';
+                minimapContext.fillRect(spawn.x * cellWidth - 1, spawn.y * cellHeight - 1, 3, 3);
+            });
         }
         
         function getTileAtPosition(x, y) {
@@ -939,6 +1295,27 @@
         function paintTile(tileX, tileY) {
             const index = tileY * tilemapData.width + tileX;
             const currentTileValue = parseInt(document.getElementById('currentTile').value);
+
+            if (currentTool === 'picker' || currentTool === 'select') {
+                const selectedTile = tilemapData.layers[currentLayer].data[index] || 0;
+                selectTile(selectedTile);
+                updateStatus(`Tile ${selectedTile} seçildi (${tileX}, ${tileY})`);
+                return;
+            }
+
+            if (currentTool === 'spawn') {
+                recordHistory();
+                const existing = Array.isArray(tilemapData.spawnPoints) ? tilemapData.spawnPoints : [];
+                tilemapData.spawnPoints = [...existing, { x: tileX, y: tileY, name: `spawn_${existing.length + 1}` }];
+                renderMap();
+                updateJSON();
+                scheduleLiveSync();
+                updateStatus(`Spawn eklendi: ${tileX}, ${tileY}`);
+                return;
+            }
+
+            if (tilemapData.layers[currentLayer].data[index] === currentTileValue && currentTool === 'paint') return;
+            recordHistory();
             
             if (currentTool === 'paint') {
                 tilemapData.layers[currentLayer].data[index] = currentTileValue;
@@ -948,6 +1325,7 @@
             
             renderMap();
             updateJSON();
+            scheduleLiveSync();
         }
         
         function fillTile(startX, startY) {
@@ -957,6 +1335,7 @@
             const targetTile = layer.data[startIndex];
             
             if (targetTile === currentTileValue) return;
+            recordHistory();
             
             const stack = [[startX, startY]];
             const visited = new Set();
@@ -982,6 +1361,7 @@
             
             renderMap();
             updateJSON();
+            scheduleLiveSync();
         }
         
         function setupEventListeners() {
@@ -1001,9 +1381,10 @@
             });
             
             canvas.addEventListener('pointermove', (e) => {
+                const pos = getTileAtPosition(e.clientX, e.clientY);
+                if (pos) updateCoordinates(pos);
                 if (!isDrawing) return;
                 e.preventDefault();
-                const pos = getTileAtPosition(e.clientX, e.clientY);
                 if (pos && (pos.x !== lastDrawPosition?.x || pos.y !== lastDrawPosition?.y)) {
                     if (currentTool !== 'fill') {
                         paintTile(pos.x, pos.y);
@@ -1042,26 +1423,59 @@
                 selectTile(parseInt(e.target.value));
             });
 
+            document.addEventListener('keydown', (e) => {
+                if (e.target.matches('input, textarea')) return;
+                const key = e.key.toLowerCase();
+                if ((e.ctrlKey || e.metaKey) && key === 'z') {
+                    e.preventDefault();
+                    e.shiftKey ? redo() : undo();
+                } else if ((e.ctrlKey || e.metaKey) && key === 'y') {
+                    e.preventDefault();
+                    redo();
+                } else if (key === 'b') setTool('paint');
+                else if (key === 'e') setTool('erase');
+                else if (key === 'f') setTool('fill');
+                else if (key === 'i') setTool('picker');
+                else if (key === 'p') setTool('spawn');
+                else if (key === 's') setTool('select');
+            });
+
             document.querySelector('.map-preview').addEventListener('touchmove', (e) => {
                 if (e.target === canvas) {
                     e.preventDefault();
                 }
             }, { passive: false });
         }
+
+        function updateCoordinates(pos) {
+            const value = `X: ${pos.x}, Y: ${pos.y}`;
+            const mouseCoords = document.getElementById('mouseCoords');
+            const coordsText = document.getElementById('coordsText');
+            if (mouseCoords) mouseCoords.textContent = value;
+            if (coordsText) coordsText.textContent = value;
+        }
         
         function updateJSON() {
             document.getElementById('jsonEditor').value = JSON.stringify(tilemapData, null, 2);
-            // Auto-save to localStorage
             localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+            updateMapMeta();
+            renderSpawnPoints();
         }
         
         function applyJSON() {
             try {
-                const newData = JSON.parse(document.getElementById('jsonEditor').value);
+                const raw = document.getElementById('jsonEditor').value;
+                const newData = normalizeEditorTilemapData(JSON.parse(raw));
+
+                recordHistory();
                 tilemapData = newData;
+                currentLayer = Math.min(currentLayer, tilemapData.layers.length - 1);
                 setupCanvas();
                 renderLayersList();
                 renderMap();
+                updateMapMeta();
+                updateJSON();
+                broadcastMapUpdate({ silent: false });
                 updateStatus('JSON uygulandı');
             } catch (error) {
                 updateStatus('JSON hatası: ' + error.message);
@@ -1070,6 +1484,7 @@
         
         function applyToGame() {
             localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+            broadcastMapUpdate({ silent: false });
 
             if (window.opener) {
                 window.opener.postMessage({
@@ -1131,7 +1546,8 @@
                 
                 reader.onload = (event) => {
                     try {
-                        tilemapData = JSON.parse(event.target.result);
+                        recordHistory();
+                        tilemapData = normalizeEditorTilemapData(JSON.parse(event.target.result));
                         setupCanvas();
                         renderLayersList();
                         renderMap();
@@ -1156,7 +1572,8 @@
         function loadFromClipboard() {
             navigator.clipboard.readText().then(text => {
                 try {
-                    tilemapData = JSON.parse(text);
+                    recordHistory();
+                    tilemapData = normalizeEditorTilemapData(JSON.parse(text));
                     setupCanvas();
                     renderLayersList();
                     renderMap();
@@ -1169,7 +1586,9 @@
         }
         
         function updateStatus(message) {
-            document.getElementById('statusBar').textContent = message;
+            const statusBar = document.getElementById('statusBar');
+            if (!statusBar) return;
+            statusBar.innerHTML = `<span id="statusText">${message}</span><span id="coordsText">X: 0, Y: 0</span>`;
         }
         
         // Initialize on load

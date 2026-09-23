@@ -95,6 +95,8 @@ class MainScene extends Phaser.Scene {
     this.xpProgressTween = null;
     this.inventoryOpen = false;
     this.killCount = 0;
+    this.playerSpawn = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+    this.activeTilemapData = null;
   }
 
   preload() {
@@ -496,7 +498,8 @@ class MainScene extends Phaser.Scene {
     this.createAnimations();
 
     this.lastFacing = 'front';
-    this.player = this.physics.add.sprite(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 'unarmed_idle_front');
+    this.playerSpawn = this.getSavedPlayerSpawnPosition();
+    this.player = this.physics.add.sprite(this.playerSpawn.x, this.playerSpawn.y, 'unarmed_idle_front');
     this.player.setOrigin(0.5, 0.5);
     this.player.setCollideWorldBounds(true);
     this.player.setDepth(10);
@@ -627,8 +630,78 @@ class MainScene extends Phaser.Scene {
     return result;
   }
 
+  normalizeTilemapData(tilemapData) {
+    if (!tilemapData || !Array.isArray(tilemapData.layers)) {
+      return null;
+    }
+
+    const normalizedLayers = tilemapData.layers.map((layer, index) => {
+      const sourceData = Array.isArray(layer.data) && layer.data.length && Array.isArray(layer.data[0])
+        ? layer.data.flat()
+        : Array.isArray(layer.data) ? layer.data : [];
+      const data = Array(MAP_TILES_W * MAP_TILES_H).fill(0);
+      const sourceWidth = Number(tilemapData.width) || MAP_TILES_W;
+      const sourceHeight = Number(tilemapData.height) || MAP_TILES_H;
+      const copyWidth = Math.min(sourceWidth, MAP_TILES_W);
+      const copyHeight = Math.min(sourceHeight, MAP_TILES_H);
+
+      for (let y = 0; y < copyHeight; y += 1) {
+        for (let x = 0; x < copyWidth; x += 1) {
+          data[y * MAP_TILES_W + x] = Number(sourceData[y * sourceWidth + x]) || 0;
+        }
+      }
+
+      return {
+        ...layer,
+        name: layer.name || `layer_${index}`,
+        data,
+        visible: layer.visible !== false,
+        opacity: Number.isFinite(Number(layer.opacity)) ? Number(layer.opacity) : 1
+      };
+    });
+
+    return {
+      ...tilemapData,
+      version: 2,
+      width: MAP_TILES_W,
+      height: MAP_TILES_H,
+      tileSize: TILE_SIZE,
+      layers: normalizedLayers,
+      spawnPoints: Array.isArray(tilemapData.spawnPoints)
+        ? tilemapData.spawnPoints.map((spawn, index) => ({
+          x: Math.max(0, Math.min(MAP_TILES_W - 1, Number(spawn.x) || 0)),
+          y: Math.max(0, Math.min(MAP_TILES_H - 1, Number(spawn.y) || 0)),
+          name: spawn.name || `spawn_${index + 1}`
+        }))
+        : []
+    };
+  }
+
+  getSpawnWorldPosition(tilemapData) {
+    const spawn = tilemapData?.spawnPoints?.[0];
+    if (!spawn) {
+      return null;
+    }
+
+    return {
+      x: Phaser.Math.Clamp((spawn.x + 0.5) * TILE_SIZE, TILE_SIZE, WORLD_WIDTH - TILE_SIZE),
+      y: Phaser.Math.Clamp((spawn.y + 0.5) * TILE_SIZE, TILE_SIZE, WORLD_HEIGHT - TILE_SIZE)
+    };
+  }
+
+  getSavedPlayerSpawnPosition() {
+    try {
+      const savedTilemap = JSON.parse(localStorage.getItem('tilemapData') || 'null');
+      return this.getSpawnWorldPosition(savedTilemap) || { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+    } catch (error) {
+      console.warn('Saved player spawn could not be loaded:', error);
+      return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+    }
+  }
+
   openTilemapEditor() {
     const tilemapData = {
+      version: 2,
       width: MAP_TILES_W,
       height: MAP_TILES_H,
       tileSize: TILE_SIZE,
@@ -657,32 +730,46 @@ class MainScene extends Phaser.Scene {
           visible: true,
           opacity: 1
         }
-      ]
+      ],
+      spawnPoints: this.activeTilemapData?.spawnPoints || []
     };
+    const editorData = this.activeTilemapData
+      ? JSON.parse(JSON.stringify(this.activeTilemapData))
+      : tilemapData;
 
-    localStorage.setItem('tilemapData', JSON.stringify(tilemapData));
+    if (this.activeTilemapData || !localStorage.getItem('tilemapData')) {
+      localStorage.setItem('tilemapData', JSON.stringify(editorData));
+    }
     window.open('tilemap-editor.html', 'TilemapEditor', 'width=1200,height=800');
     console.log('Tilemap editor açıldı! Değişiklikleri kaydedip oyuna uygulayabilirsiniz.');
   }
 
   applyTilemapData(tilemapData) {
-    if (!tilemapData || !tilemapData.layers) {
+    const normalizedTilemapData = this.normalizeTilemapData(tilemapData);
+    if (!normalizedTilemapData) {
       return;
     }
 
+    this.activeTilemapData = normalizedTilemapData;
+    localStorage.setItem('tilemapData', JSON.stringify(normalizedTilemapData));
+
     const layerLookup = {};
-    tilemapData.layers.forEach((layer) => {
+    normalizedTilemapData.layers.forEach((layer) => {
       const normalizedName = (layer.name || '').toLowerCase();
       const flatData = Array.isArray(layer.data) && layer.data.length && Array.isArray(layer.data[0])
         ? layer.data.flat()
         : Array.isArray(layer.data) ? layer.data : [];
-      layerLookup[normalizedName] = flatData;
+      layerLookup[normalizedName] = {
+        data: flatData,
+        visible: layer.visible !== false,
+        opacity: Number(layer.opacity) || 1
+      };
     });
 
-    const groundData = this.makeMatrixFromFlatData(layerLookup.ground || Array(MAP_TILES_W * MAP_TILES_H).fill(1), MAP_TILES_W, MAP_TILES_H);
-    const beachData = this.makeMatrixFromFlatData(layerLookup.beach || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
-    const waterData = this.makeMatrixFromFlatData(layerLookup.water || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
-    const propsData = this.makeMatrixFromFlatData(layerLookup.decoration || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
+    const groundData = this.makeMatrixFromFlatData(layerLookup.ground?.data || Array(MAP_TILES_W * MAP_TILES_H).fill(1), MAP_TILES_W, MAP_TILES_H);
+    const beachData = this.makeMatrixFromFlatData(layerLookup.beach?.data || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
+    const waterData = this.makeMatrixFromFlatData(layerLookup.water?.data || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
+    const propsData = this.makeMatrixFromFlatData(layerLookup.decoration?.data || Array(MAP_TILES_W * MAP_TILES_H).fill(0), MAP_TILES_W, MAP_TILES_H);
 
     if (this.groundLayer) {
       this.groundLayer.destroy();
@@ -703,18 +790,24 @@ class MainScene extends Phaser.Scene {
     this.groundLayer = this.groundMap.createLayer(0, groundTileset, 0, 0);
     this.groundLayer.setDepth(0);
     this.groundLayer.setSkipCull(true);
+    this.groundLayer.setVisible(layerLookup.ground?.visible !== false);
+    this.groundLayer.setAlpha(layerLookup.ground?.opacity ?? 1);
 
     this.beachMap = this.make.tilemap({ data: beachData, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
     const beachTileset = this.beachMap.addTilesetImage(tilesetKey, tilesetKey, TILE_SIZE, TILE_SIZE, 0, 0, 1);
     this.beachLayer = this.beachMap.createLayer(0, beachTileset, 0, 0);
     this.beachLayer.setDepth(1);
     this.beachLayer.setSkipCull(true);
+    this.beachLayer.setVisible(layerLookup.beach?.visible !== false);
+    this.beachLayer.setAlpha(layerLookup.beach?.opacity ?? 1);
 
     this.waterMap = this.make.tilemap({ data: waterData, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
     const waterTileset = this.waterMap.addTilesetImage(tilesetKey, tilesetKey, TILE_SIZE, TILE_SIZE, 0, 0, 1);
     this.waterLayer = this.waterMap.createLayer(0, waterTileset, 0, 0);
     this.waterLayer.setDepth(2);
     this.waterLayer.setSkipCull(true);
+    this.waterLayer.setVisible(layerLookup.water?.visible !== false);
+    this.waterLayer.setAlpha(layerLookup.water?.opacity ?? 1);
     this.waterLayer.setCollisionByExclusion([0]);
 
     this.propsMap = this.make.tilemap({ data: propsData, tileWidth: TILE_SIZE, tileHeight: TILE_SIZE });
@@ -722,6 +815,21 @@ class MainScene extends Phaser.Scene {
     this.propsLayer = this.propsMap.createLayer(0, propsTileset, 0, 0);
     this.propsLayer.setDepth(4);
     this.propsLayer.setSkipCull(true);
+    this.propsLayer.setVisible(layerLookup.decoration?.visible !== false);
+    this.propsLayer.setAlpha(layerLookup.decoration?.opacity ?? 1);
+
+    const savedSpawn = this.getSpawnWorldPosition(normalizedTilemapData);
+    if (savedSpawn) {
+      this.playerSpawn = savedSpawn;
+      if (this.player) {
+        this.player.setPosition(savedSpawn.x, savedSpawn.y);
+        this.player.body.reset(savedSpawn.x, savedSpawn.y);
+      }
+    }
+
+    if (this.player && !this.player.body) {
+      return;
+    }
 
     if (this.player) {
       this.physics.add.collider(this.player, this.waterLayer);
@@ -1615,7 +1723,8 @@ class MainScene extends Phaser.Scene {
     if (this.playerHealth <= 0) {
       this.playerHealth = MAX_PLAYER_HEALTH;
       this.updateHealthDisplay();
-      this.player.setPosition(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+      this.player.setPosition(this.playerSpawn.x, this.playerSpawn.y);
+      this.player.body.reset(this.playerSpawn.x, this.playerSpawn.y);
     }
   }
 
