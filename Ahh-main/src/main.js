@@ -98,6 +98,7 @@ class MainScene extends Phaser.Scene {
     this.killCount = 0;
     this.playerSpawn = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
     this.activeTilemapData = null;
+    this.editorObjectSprites = [];
   }
 
   preload() {
@@ -160,6 +161,9 @@ class MainScene extends Phaser.Scene {
     for (let i = 1; i <= 4; i++) {
       this.load.image(`house_${i}`, `${ASSET_BASE}assets/objects/7 House/${i}.png`);
     }
+    ['Door1', 'Door2', 'DoubleDoor1', 'DoubleDoor2'].forEach((name) => {
+      this.load.image(`animated_${name}`, `${ASSET_BASE}assets/animated_objects/${name}.png`);
+    });
 
     Object.entries(ANIMAL_DEFS).forEach(([species, definition]) => {
       Object.entries(definition.atlasFiles).forEach(([action, fileName]) => {
@@ -377,9 +381,11 @@ class MainScene extends Phaser.Scene {
     this.propsLayer.setDepth(4);
     this.propsLayer.setSkipCull(true);
     
-    // Add individual decorative objects as sprites
-    this.addDecorativeObjects();
-    this.createWorldDecor();
+    // Preview mode renders only the objects placed in the editor.
+    if (!IS_EDITOR_PREVIEW) {
+      this.addDecorativeObjects();
+      this.createWorldDecor();
+    }
   }
 
   createWorldDecor() {
@@ -518,8 +524,13 @@ class MainScene extends Phaser.Scene {
     this.animals.forEach((animal) => this.physics.add.collider(animal.sprite, this.waterLayer));
 
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
     this.cameras.main.setZoom(1.25);
+    if (IS_EDITOR_PREVIEW) {
+      this.cameras.main.stopFollow();
+      this.cameras.main.centerOn(this.playerSpawn.x, this.playerSpawn.y);
+    } else {
+      this.cameras.main.startFollow(this.player, true, 0.2, 0.2);
+    }
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys({
@@ -705,6 +716,37 @@ class MainScene extends Phaser.Scene {
     }
   }
 
+  getEditorObjectKey(tileId) {
+    if (tileId >= 129 && tileId <= 145) return `decor_${tileId - 128}`;
+    if (tileId >= 146 && tileId <= 151) return `grass_${tileId - 145}`;
+    if (tileId >= 152 && tileId <= 157) return `stone_${tileId - 151}`;
+    if (tileId >= 158 && tileId <= 162) return `box_${tileId - 157}`;
+    if (tileId >= 163 && tileId <= 168) return `shadow_${tileId - 162}`;
+    if (tileId >= 169 && tileId <= 172) return `tent_${tileId - 168}`;
+    if (tileId >= 173 && tileId <= 176) return `house_${tileId - 172}`;
+    if (tileId >= 177 && tileId <= 180) {
+      return `animated_${['Door1', 'Door2', 'DoubleDoor1', 'DoubleDoor2'][tileId - 177]}`;
+    }
+    return null;
+  }
+
+  renderEditorObjects(flatData) {
+    this.editorObjectSprites.forEach((sprite) => sprite.destroy());
+    this.editorObjectSprites = [];
+
+    flatData.forEach((tileId, index) => {
+      const objectKey = this.getEditorObjectKey(Number(tileId) || 0);
+      if (!objectKey || !this.textures.exists(objectKey)) return;
+      const x = (index % MAP_TILES_W) * TILE_SIZE + TILE_SIZE / 2;
+      const y = Math.floor(index / MAP_TILES_W) * TILE_SIZE + TILE_SIZE / 2;
+      const sprite = this.add.image(x, y, objectKey);
+      sprite.setOrigin(0.5, 0.75);
+      sprite.setDepth(5 + y / WORLD_HEIGHT);
+      sprite.setData('editorObjectTileId', tileId);
+      this.editorObjectSprites.push(sprite);
+    });
+  }
+
   openTilemapEditor() {
     const tilemapData = {
       version: 2,
@@ -823,6 +865,7 @@ class MainScene extends Phaser.Scene {
     this.propsLayer.setSkipCull(true);
     this.propsLayer.setVisible(layerLookup.decoration?.visible !== false);
     this.propsLayer.setAlpha(layerLookup.decoration?.opacity ?? 1);
+    this.renderEditorObjects(layerLookup.decoration?.data || []);
 
     const savedSpawn = this.getSpawnWorldPosition(normalizedTilemapData);
     if (savedSpawn) {
@@ -830,6 +873,10 @@ class MainScene extends Phaser.Scene {
       if (this.player) {
         this.player.setPosition(savedSpawn.x, savedSpawn.y);
         this.player.body.reset(savedSpawn.x, savedSpawn.y);
+      }
+      if (IS_EDITOR_PREVIEW) {
+        this.cameras.main.stopFollow();
+        this.cameras.main.centerOn(savedSpawn.x, savedSpawn.y);
       }
     }
 
