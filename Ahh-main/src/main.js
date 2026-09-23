@@ -451,10 +451,20 @@ class MainScene extends Phaser.Scene {
       if (!this.textures.exists(key)) return;
       const x = tileX * TILE_SIZE + TILE_SIZE / 2;
       const y = tileY * TILE_SIZE + TILE_SIZE / 2;
-      const sprite = this.add.image(x, y, key);
+      const blocking = /^(house|tent|box|stone|decor|animated_)/.test(key);
+      const sprite = blocking && this.worldObstacleGroup
+        ? this.worldObstacleGroup.create(x, y, key)
+        : this.add.image(x, y, key);
       sprite.setScale(scale);
       sprite.setOrigin(0.5, 0.78);
       sprite.setDepth(depthOffset + y / WORLD_HEIGHT);
+      if (blocking && sprite.body) {
+        const bodyWidth = Math.min(42, Math.max(20, sprite.width * 0.55));
+        const bodyHeight = Math.min(34, Math.max(18, sprite.height * 0.32));
+        sprite.body.setSize(bodyWidth, bodyHeight);
+        sprite.body.setOffset((sprite.width - bodyWidth) / 2, sprite.height * 0.58);
+        sprite.refreshBody();
+      }
       this.proceduralDecorSprites.push(sprite);
     };
 
@@ -500,6 +510,8 @@ class MainScene extends Phaser.Scene {
       1
     );
     worldBackdrop.setDepth(-1);
+    this.worldObstacleGroup = this.physics.add.staticGroup();
+    this.editorObstacleGroup = this.physics.add.staticGroup();
     this.createWorldMap();
 
     this.createAnimations();
@@ -521,7 +533,11 @@ class MainScene extends Phaser.Scene {
 
     this.createAnimals();
     this.physics.add.collider(this.player, this.waterLayer);
+    this.physics.add.collider(this.player, this.worldObstacleGroup);
+    this.physics.add.collider(this.player, this.editorObstacleGroup);
     this.animals.forEach((animal) => this.physics.add.collider(animal.sprite, this.waterLayer));
+    this.animals.forEach((animal) => this.physics.add.collider(animal.sprite, this.worldObstacleGroup));
+    this.animals.forEach((animal) => this.physics.add.collider(animal.sprite, this.editorObstacleGroup));
 
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.setZoom(1.25);
@@ -769,16 +785,28 @@ class MainScene extends Phaser.Scene {
   renderEditorObjects(flatData) {
     this.editorObjectSprites.forEach((sprite) => sprite.destroy());
     this.editorObjectSprites = [];
+    this.editorObstacleGroup?.clear(true, true);
 
     flatData.forEach((tileId, index) => {
       const objectKey = this.getEditorObjectKey(Number(tileId) || 0);
       if (!objectKey || !this.textures.exists(objectKey)) return;
       const x = (index % MAP_TILES_W) * TILE_SIZE + TILE_SIZE / 2;
       const y = Math.floor(index / MAP_TILES_W) * TILE_SIZE + TILE_SIZE / 2;
-      const sprite = this.add.image(x, y, objectKey);
+      const tileNumber = Number(tileId) || 0;
+      const blocking = (tileNumber >= 129 && tileNumber <= 162) || (tileNumber >= 169 && tileNumber <= 180);
+      const sprite = blocking && this.editorObstacleGroup
+        ? this.editorObstacleGroup.create(x, y, objectKey)
+        : this.add.image(x, y, objectKey);
       sprite.setOrigin(0.5, 0.75);
       sprite.setDepth(5 + y / WORLD_HEIGHT);
       sprite.setData('editorObjectTileId', tileId);
+      if (blocking && sprite.body) {
+        const bodyWidth = Math.min(42, Math.max(20, sprite.width * 0.55));
+        const bodyHeight = Math.min(34, Math.max(18, sprite.height * 0.32));
+        sprite.body.setSize(bodyWidth, bodyHeight);
+        sprite.body.setOffset((sprite.width - bodyWidth) / 2, sprite.height * 0.58);
+        sprite.refreshBody();
+      }
       this.editorObjectSprites.push(sprite);
     });
   }
