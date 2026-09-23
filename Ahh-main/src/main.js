@@ -1146,6 +1146,8 @@ class MainScene extends Phaser.Scene {
           maxHealth: species === 'boar' ? 45 : 25,
           direction: 'front',
           nextDecisionAt: 0,
+          pauseUntil: 0,
+          sprintUntil: 0,
           attackCooldownAt: 0,
           hurtUntil: 0,
           attacking: false,
@@ -1196,6 +1198,35 @@ class MainScene extends Phaser.Scene {
     }
 
     return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+  }
+
+  getAnimalRegionBounds(animal) {
+    const padding = 1.5 * TILE_SIZE;
+    return {
+      minX: animal.region.minX * TILE_SIZE + padding,
+      maxX: (animal.region.maxX + 1) * TILE_SIZE - padding,
+      minY: animal.region.minY * TILE_SIZE + padding,
+      maxY: (animal.region.maxY + 1) * TILE_SIZE - padding,
+      centerX: ((animal.region.minX + animal.region.maxX + 1) / 2) * TILE_SIZE,
+      centerY: ((animal.region.minY + animal.region.maxY + 1) / 2) * TILE_SIZE
+    };
+  }
+
+  keepAnimalInsideRegion(animal, time) {
+    const bounds = this.getAnimalRegionBounds(animal);
+    const sprite = animal.sprite;
+    const clampedX = Phaser.Math.Clamp(sprite.x, bounds.minX, bounds.maxX);
+    const clampedY = Phaser.Math.Clamp(sprite.y, bounds.minY, bounds.maxY);
+    const wasOutside = clampedX !== sprite.x || clampedY !== sprite.y;
+    if (wasOutside) {
+      sprite.setPosition(clampedX, clampedY);
+      const angle = Math.atan2(bounds.centerY - clampedY, bounds.centerX - clampedX);
+      const speed = animal.definition.speed * 0.62;
+      sprite.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+      animal.pauseUntil = 0;
+      animal.nextDecisionAt = time + 1200;
+    }
+    return bounds;
   }
 
   createAnimalNameplate(animal) {
@@ -1288,11 +1319,26 @@ class MainScene extends Phaser.Scene {
   }
 
   chooseAnimalDirection(animal, time) {
+    const bounds = this.getAnimalRegionBounds(animal);
+    if (Math.random() < 0.28) {
+      animal.pauseUntil = time + Phaser.Math.Between(900, 2400);
+      animal.sprintUntil = 0;
+      animal.sprite.setVelocity(0, 0);
+      animal.nextDecisionAt = animal.pauseUntil;
+      return;
+    }
+
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const speed = animal.definition.speed * Phaser.Math.FloatBetween(0.8, 1.15);
+    const sprinting = Math.random() < 0.1;
+    const speed = animal.definition.speed * (sprinting ? Phaser.Math.FloatBetween(0.82, 0.98) : Phaser.Math.FloatBetween(0.48, 0.72));
+    animal.sprintUntil = sprinting ? time + Phaser.Math.Between(700, 1400) : 0;
     animal.sprite.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-    animal.nextDecisionAt = time + Phaser.Math.Between(1400, 3600);
+    animal.nextDecisionAt = time + Phaser.Math.Between(2200, 5200);
     animal.direction = this.getDirectionKey(animal.sprite.body.velocity.x, animal.sprite.body.velocity.y);
+
+    if (animal.sprite.x < bounds.minX || animal.sprite.x > bounds.maxX || animal.sprite.y < bounds.minY || animal.sprite.y > bounds.maxY) {
+      this.keepAnimalInsideRegion(animal, time);
+    }
   }
 
   updateAnimalDirection(animal) {
@@ -1310,9 +1356,16 @@ class MainScene extends Phaser.Scene {
       }
 
       const sprite = animal.sprite;
+      this.keepAnimalInsideRegion(animal, time);
       if (animal.hurtUntil > time) {
         sprite.setVelocity(0, 0);
         this.playAnimalAnimation(animal, 'hurt');
+        return;
+      }
+
+      if (animal.pauseUntil > time) {
+        sprite.setVelocity(0, 0);
+        this.playAnimalAnimation(animal, 'idle');
         return;
       }
 
@@ -1338,12 +1391,12 @@ class MainScene extends Phaser.Scene {
         return;
       }
 
-      if (animal.nextDecisionAt <= time || sprite.body.speed < 1) {
+      if (animal.nextDecisionAt <= time || (sprite.body.speed < 1 && animal.pauseUntil <= time)) {
         this.chooseAnimalDirection(animal, time);
       }
 
       this.updateAnimalDirection(animal);
-      const action = sprite.body.speed > animal.definition.speed * 1.08 ? 'run' : 'walk';
+      const action = animal.sprintUntil > time ? 'run' : 'walk';
       const resolvedAction = ANIMAL_DEFS[animal.species].actions[action] ? action : animal.species === 'black_grouse' && sprite.body.speed > 70 ? 'flight' : 'walk';
       this.playAnimalAnimation(animal, resolvedAction);
       sprite.setDepth(5 + sprite.y / WORLD_HEIGHT * 4);
