@@ -112,11 +112,6 @@ class MainScene extends Phaser.Scene {
     this.xpProgressTween = null;
     this.inventoryOpen = false;
     this.killCount = 0;
-    this.equipment = {
-      armor: { id: 'iron_mail', name: 'Iron Mail', defense: 6, tint: 0x6e8d9b },
-      helmet: { id: 'iron_helm', name: 'Iron Helm', defense: 2, tint: 0x89a7b1 }
-    };
-    this.armorDefense = 8;
     this.playerSpawn = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
     this.activeTilemapData = null;
     this.editorObjectSprites = [];
@@ -523,7 +518,6 @@ class MainScene extends Phaser.Scene {
     this.player.body.setMaxVelocity(RUN_SPEED, RUN_SPEED);
     this.player.body.setBoundsRectangle(new Phaser.Geom.Rectangle(0, 0, WORLD_WIDTH, WORLD_HEIGHT));
     this.createPlayerNameplate();
-    this.createArmorOverlay();
 
     this.createAnimals();
     this.physics.add.collider(this.player, this.waterLayer);
@@ -983,48 +977,6 @@ class MainScene extends Phaser.Scene {
     this.nameplateXpBar = this.add.graphics();
     this.playerNameplate.add(this.nameplateXpBar);
     this.updatePlayerNameplate();
-  }
-
-  createArmorOverlay() {
-    this.armorOverlay = this.add.graphics();
-    this.armorOverlay.setDepth(11);
-    this.armorOverlay.setAlpha(0.96);
-    this.updateArmorOverlay(true);
-  }
-
-  updateArmorOverlay(forceRedraw = false) {
-    if (!this.armorOverlay || !this.player) return;
-    const direction = this.lastFacing || 'front';
-    if (!forceRedraw && this.armorOverlayDirection === direction) {
-      this.armorOverlay.setPosition(this.player.x, this.player.y);
-      return;
-    }
-
-    this.armorOverlayDirection = direction;
-    this.armorOverlay.clear();
-    this.armorOverlay.fillStyle(this.equipment.armor.tint, 0.92);
-    this.armorOverlay.lineStyle(1.5, 0xc6e4e4, 0.95);
-
-    if (direction === 'side_left' || direction === 'side_right') {
-      this.armorOverlay.fillRoundedRect(-9, -4, 18, 27, 5);
-      this.armorOverlay.strokeRoundedRect(-9, -4, 18, 27, 5);
-      this.armorOverlay.fillStyle(0x9bb5bc, 0.95);
-      this.armorOverlay.fillCircle(direction === 'side_left' ? -8 : 8, -13, 8);
-      this.armorOverlay.lineBetween(direction === 'side_left' ? -14 : 14, -13, direction === 'side_left' ? -3 : 3, -13);
-    } else {
-      this.armorOverlay.fillRoundedRect(-16, -3, 32, 28, 6);
-      this.armorOverlay.strokeRoundedRect(-16, -3, 32, 28, 6);
-      this.armorOverlay.fillStyle(0x9bb5bc, 0.95);
-      this.armorOverlay.fillCircle(0, -14, 9);
-      this.armorOverlay.lineBetween(-9, -14, 9, -14);
-      this.armorOverlay.lineBetween(0, -22, 0, -6);
-    }
-
-    this.armorOverlay.fillStyle(0xc29a55, 0.95);
-    this.armorOverlay.fillRoundedRect(-4, 1, 8, 5, 2);
-    this.armorOverlay.lineStyle(1, 0xf4d58d, 0.9);
-    this.armorOverlay.strokeRoundedRect(-4, 1, 8, 5, 2);
-    this.armorOverlay.setPosition(this.player.x, this.player.y);
   }
 
   updatePlayerNameplate() {
@@ -2015,8 +1967,7 @@ class MainScene extends Phaser.Scene {
       return;
     }
 
-    const mitigatedDamage = Math.max(1, amount - this.armorDefense);
-    this.playerHealth = Math.max(0, this.playerHealth - mitigatedDamage);
+    this.playerHealth = Math.max(0, this.playerHealth - amount);
     this.updateHealthDisplay();
     this.playerHurtTimer = this.time.delayedCall(550, () => {
       this.playerHurtTimer = null;
@@ -2049,7 +2000,6 @@ class MainScene extends Phaser.Scene {
 
     this.updateAnimals(this.time.now);
     this.updatePlayerNameplate();
-    this.updateArmorOverlay();
 
     if (this.playerHurtTimer) {
       this.player.setVelocity(0, 0);
